@@ -1,0 +1,27 @@
+/node_modules
+/public/hot
+/public/storage
+/public/Documentos
+/storage/*.key
+/storage/obstetricia/*
+/vendor
+.jsro
+.env
+.env.backup
+.phpunit.result.cache
+docker-compose.override.yml
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+/.idea
+/.vscode
+
+# Windows Zone.Identifier files
+*Zone.Identifier
+
+# Windows reserved names
+NUL
+CON
+PRN
+AUX

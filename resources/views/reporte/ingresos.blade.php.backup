@@ -1,0 +1,354 @@
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl leading-tight" style="color: #2e3a75;">
+            Reporte de Ingresos y Actividad de Usuarios
+        </h2>
+    </x-slot>
+
+    <div class="py-6">
+        <div class="max-w-full mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+                
+                <!-- Breadcrumb -->
+                <nav class="flex items-center gap-2 px-6 py-4 text-sm text-gray-600 border-b">
+                    <a class="hover:text-[#2e3a75]" href="{{ route('dashboard') }}">Inicio</a>
+                    <span class="material-symbols-outlined text-base">chevron_right</span>
+                    <span class="font-medium" style="color: #2e3a75;">Reporte de Ingresos</span>
+                </nav>
+
+                <!-- Header -->
+                <div class="px-6 py-6 border-b" style="background: linear-gradient(135deg, #2e3a75 0%, #3d4d8f 100%);">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                        <div>
+                            <h2 class="text-2xl font-black tracking-tight text-white">
+                                Actividad de Usuarios
+                            </h2>
+                            <p class="text-white/80 mt-2 text-sm">
+                                Seguimiento de registros, citas y actividad en la plataforma.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <div class="px-6 py-4 bg-gray-50 border-b">
+                    <div class="flex flex-wrap items-end gap-3">
+                        <!-- Fecha Inicio -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[9px] font-bold uppercase tracking-wide" style="color: #2e3a75;">
+                                Inicio
+                            </label>
+                            <input class="w-36 bg-white border-gray-300 rounded-lg text-xs px-2.5 py-1.5 transition-colors" 
+                                   style="focus:ring-color: #2e3a75; focus:border-color: #2e3a75;"
+                                   type="date" 
+                                   value="{{ date('Y-m-d', strtotime('-7 days')) }}"/>
+                        </div>
+
+                        <!-- Fecha Fin -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[9px] font-bold uppercase tracking-wide" style="color: #2e3a75;">
+                                Fin
+                            </label>
+                            <input class="w-36 bg-white border-gray-300 rounded-lg text-xs px-2.5 py-1.5 transition-colors" 
+                                   style="focus:ring-color: #2e3a75; focus:border-color: #2e3a75;"
+                                   type="date" 
+                                   value="{{ date('Y-m-d') }}"/>
+                        </div>
+
+                        <!-- Tipo -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[9px] font-bold uppercase tracking-wide" style="color: #2e3a75;">
+                                Tipo
+                            </label>
+                            <select class="w-32 bg-white border-gray-300 rounded-lg text-xs px-2.5 py-1.5 transition-colors">
+                                <option>Todos</option>
+                                <option>Registro</option>
+                                <option>Cita</option>
+                                <option>Consulta</option>
+                                <option>Perfil</option>
+                            </select>
+                        </div>
+
+                        <!-- Botón Filtrar -->
+                        <button class="text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-md hover:opacity-90" style="background-color: #2e3a75;">
+                            <span class="material-symbols-outlined text-sm">filter_alt</span>
+                            <span>Filtrar</span>
+                        </button>
+
+                        <!-- Estadísticas -->
+                        <div class="ml-auto flex items-center gap-2">
+                            <div class="px-3 py-1.5 rounded-lg flex items-center gap-2" style="background-color: rgba(46, 58, 117, 0.1); border: 1px solid rgba(46, 58, 117, 0.3);">
+                                <div class="flex flex-col">
+                                    <span class="text-[8px] font-bold uppercase leading-none" style="color: rgba(46, 58, 117, 0.7);">
+                                        Total
+                                    </span>
+                                    <span class="text-lg font-bold leading-tight" style="color: #2e3a75;">1,240</span>
+                                </div>
+                            </div>
+                            <div class="bg-green-50 px-3 py-1.5 rounded-lg border border-green-200 flex items-center gap-2">
+                                <div class="flex flex-col">
+                                    <span class="text-[8px] font-bold text-green-600 uppercase leading-none">
+                                        Nuevos
+                                    </span>
+                                    <span class="text-green-700 text-lg font-bold leading-tight">45</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="border-b-2" style="background-color: rgba(46, 58, 117, 0.05); border-color: #2e3a75;">
+                            <tr>
+                                <th class="px-4 py-3 text-[10px] font-bold uppercase tracking-wide" style="color: #2e3a75;">
+                                    ID
+                                </th>
+                                <th class="px-4 py-3 text-[10px] font-bold uppercase tracking-wide" style="color: #2e3a75;">
+                                    Usuario
+                                </th>
+                                <th class="px-4 py-3 text-[10px] font-bold uppercase tracking-wide" style="color: #2e3a75;">
+                                    Fecha
+                                </th>
+                                <th class="px-4 py-3 text-[10px] font-bold uppercase tracking-wide" style="color: #2e3a75;">
+                                    Hora
+                                </th>
+                                <th class="px-4 py-3 text-[10px] font-bold uppercase tracking-wide" style="color: #2e3a75;">
+                                    Actividad
+                                </th>
+                                <th class="px-4 py-3 text-[10px] font-bold uppercase tracking-wide" style="color: #2e3a75;">
+                                    Servicio
+                                </th>
+                                <th class="px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-center" style="color: #2e3a75;">
+                                    Acción
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 bg-white">
+                            <!-- Ejemplo de fila 1 - Nuevo Registro -->
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-3 text-xs font-mono font-medium" style="color: #2e3a75;">
+                                    #90421
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="size-7 rounded-full flex items-center justify-center text-white font-bold text-[10px]" style="background-color: #2e3a75;">
+                                            SJ
+                                        </div>
+                                        <span class="text-sm font-bold text-gray-900">Sarah Jenkins</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-xs">
+                                    {{ date('d/m/Y') }}
+                                </td>
+                                <td class="px-4 py-3 text-xs font-medium">
+                                    14:22
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
+                                        Registro
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-xs text-gray-500">
+                                    -
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <button class="text-gray-600 transition-colors p-1" style="hover:color: #2e3a75;">
+                                        <span class="material-symbols-outlined text-lg">more_vert</span>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Ejemplo de fila 2 - Solicitud de Cita -->
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-3 text-xs font-mono font-medium" style="color: #2e3a75;">
+                                    #88219
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="size-7 rounded-full flex items-center justify-center text-white font-bold text-[10px]" style="background-color: #3d4d8f;">
+                                            MC
+                                        </div>
+                                        <span class="text-sm font-bold text-gray-900">Michael Chen</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-xs">
+                                    {{ date('d/m/Y') }}
+                                </td>
+                                <td class="px-4 py-3 text-xs font-medium">
+                                    13:58
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                                        Cita
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="text-xs font-medium text-gray-700">Cardiología</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <button class="text-gray-600 transition-colors p-1" style="hover:color: #2e3a75;">
+                                        <span class="material-symbols-outlined text-lg">more_vert</span>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Ejemplo de fila 3 - Edición de Perfil -->
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-3 text-xs font-mono font-medium" style="color: #2e3a75;">
+                                    #77610
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="size-7 rounded-full flex items-center justify-center text-white font-bold text-[10px]" style="background-color: #4a5ba3;">
+                                            EW
+                                        </div>
+                                        <span class="text-sm font-bold text-gray-900">Emma Watson</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-xs">
+                                    {{ date('d/m/Y') }}
+                                </td>
+                                <td class="px-4 py-3 text-xs font-medium">
+                                    13:45
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-white border" style="background-color: rgba(46, 58, 117, 0.8); border-color: #2e3a75;">
+                                        Perfil
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-xs text-gray-500">
+                                    -
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <button class="text-gray-600 transition-colors p-1" style="hover:color: #2e3a75;">
+                                        <span class="material-symbols-outlined text-lg">more_vert</span>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Ejemplo de fila 4 - Otra Solicitud de Cita -->
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-3 text-xs font-mono font-medium" style="color: #2e3a75;">
+                                    #91288
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="size-7 rounded-full flex items-center justify-center text-white font-bold text-[10px]" style="background-color: #2e3a75;">
+                                            DM
+                                        </div>
+                                        <span class="text-sm font-bold text-gray-900">David Miller</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-xs">
+                                    {{ date('d/m/Y') }}
+                                </td>
+                                <td class="px-4 py-3 text-xs font-medium">
+                                    12:30
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                                        Cita
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="text-xs font-medium text-gray-700">Pediatría</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <button class="text-gray-600 transition-colors p-1" style="hover:color: #2e3a75;">
+                                        <span class="material-symbols-outlined text-lg">more_vert</span>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Ejemplo de fila 5 - Consulta -->
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-3 text-xs font-mono font-medium" style="color: #2e3a75;">
+                                    #92551
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="size-7 rounded-full flex items-center justify-center text-white font-bold text-[10px]" style="background-color: #3d4d8f;">
+                                            LP
+                                        </div>
+                                        <span class="text-sm font-bold text-gray-900">Liam Peterson</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-xs">
+                                    {{ date('d/m/Y') }}
+                                </td>
+                                <td class="px-4 py-3 text-xs font-medium">
+                                    11:15
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">
+                                        Consulta
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="text-xs font-medium text-gray-700">Medicina Gral.</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <button class="text-gray-600 transition-colors p-1" style="hover:color: #2e3a75;">
+                                        <span class="material-symbols-outlined text-lg">more_vert</span>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Más filas se cargarían dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                    <p class="text-sm text-gray-600">
+                        Mostrando <span class="font-bold">1</span> a <span class="font-bold">10</span> de <span class="font-bold">1,240</span> resultados
+                    </p>
+                    <div class="flex items-center gap-2">
+                        <button class="p-2 rounded-lg border border-gray-300 hover:bg-white disabled:opacity-50 transition-colors" disabled>
+                            <span class="material-symbols-outlined text-lg">chevron_left</span>
+                        </button>
+                        <button class="size-8 rounded-lg text-white text-sm font-bold transition-colors" style="background-color: #2e3a75;">1</button>
+                        <button class="size-8 rounded-lg hover:bg-gray-100 text-sm font-medium transition-colors hover-primary">2</button>
+                        <button class="size-8 rounded-lg hover:bg-gray-100 text-sm font-medium transition-colors hover-primary">3</button>
+                        <span class="text-gray-600">...</span>
+                        <button class="size-8 rounded-lg hover:bg-gray-100 text-sm font-medium transition-colors hover-primary">124</button>
+                        <button class="p-2 rounded-lg border border-gray-300 hover:bg-white transition-colors">
+                            <span class="material-symbols-outlined text-lg">chevron_right</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Material Symbols Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Hover effects con color corporativo */
+        .hover-primary:hover {
+            background-color: rgba(46, 58, 117, 0.1) !important;
+            color: #2e3a75 !important;
+        }
+        
+        /* Focus states para inputs */
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2e3a75 !important;
+            box-shadow: 0 0 0 3px rgba(46, 58, 117, 0.1) !important;
+        }
+        
+        /* Hover para botones de acción */
+        button:hover .material-symbols-outlined {
+            color: #2e3a75;
+        }
+    </style>
+</x-app-layout>

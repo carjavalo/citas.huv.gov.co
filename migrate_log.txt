@@ -1,0 +1,108 @@
+'\\wsl.localhost\Ubuntu-22.04\home\cvalderrama\citas-huv\citas-huv'
+CMD.EXE se inició con esta ruta como el directorio actual. No se permiten
+rutas UNC. Regresando de manera predeterminada al directorio Windows.
+Migrating: 2022_03_11_082149_update_columna_tdocumento_from_users_table
+
+   Illuminate\Database\QueryException 
+
+  SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'TYPE integer USING(tdocumento::integer)' at line 1 (SQL: ALTER TABLE users ALTER COLUMN tdocumento TYPE integer USING(tdocumento::integer))
+
+  at C:\xampp\htdocs\citas\vendor\laravel\framework\src\Illuminate\Database\Connection.php:712
+    708▕         // If an exception occurs when attempting to run a query, we'll format the error
+    709▕         // message to include the bindings with SQL, which will make this exception a
+    710▕         // lot more helpful to the developer instead of just the database's errors.
+    711▕         catch (Exception $e) {
+  ➜ 712▕             throw new QueryException(
+    713▕                 $query, $this->prepareBindings($bindings), $e
+    714▕             );
+    715▕         }
+    716▕     }
+
+   Whoops\Exception\ErrorException 
+
+  Using ${var} in strings is deprecated, use {$var} instead
+
+  at C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\MergeConflictSolutionProvider.php:53
+     49▕ 
+     50▕     protected function getCurrentBranch(string $directory): string
+     51▕     {
+     52▕         
+  ➜  53▕         $branch = "'".trim(shell_exec("cd ${directory}; git branch | grep \\* | cut -d ' ' -f2"))."'";
+     54▕ 
+     55▕         //$branch = "'".trim(shell_exec("cd {$directory}; git branch | grep \\* | cut -d ' ' -f2"))."'";
+     56▕ 
+     57▕
+PHP Fatal error:  Uncaught Whoops\Exception\ErrorException: Using ${var} in strings is deprecated, use {$var} instead in C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\MergeConflictSolutionProvider.php:53
+Stack trace:
+#0 C:\xampp\htdocs\citas\vendor\composer\ClassLoader.php(576): Whoops\Run->handleError(8192, 'Using ${var} in...', 'C:\\xampp\\htdocs...', 53)
+#1 C:\xampp\htdocs\citas\vendor\composer\ClassLoader.php(576): include()
+#2 C:\xampp\htdocs\citas\vendor\composer\ClassLoader.php(427): Composer\Autoload\{closure}('C:\\xampp\\htdocs...')
+#3 [internal function]: Composer\Autoload\ClassLoader->loadClass('Facade\\Ignition...')
+#4 C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\SolutionProviderRepository.php(50): class_implements('Facade\\Ignition...')
+#5 [internal function]: Facade\Ignition\SolutionProviders\SolutionProviderRepository->Facade\Ignition\SolutionProviders\{closure}('Facade\\Ignition...', 10)
+#6 C:\xampp\htdocs\citas\vendor\laravel\framework\src\Illuminate\Collections\Arr.php(717): array_filter(Array, Object(Closure), 1)
+#7 C:\xampp\htdocs\citas\vendor\laravel\framework\src\Illuminate\Collections\Collection.php(358): Illuminate\Support\Arr::where(Array, Object(Closure))
+#8 C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\SolutionProviderRepository.php(49): Illuminate\Support\Collection->filter(Object(Closure))
+#9 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Adapters\Laravel\IgnitionSolutionsRepository.php(36): Facade\Ignition\SolutionProviders\SolutionProviderRepository->getSolutionsForThrowable(Object(Whoops\Exception\ErrorException))
+#10 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Writer.php(244): NunoMaduro\Collision\Adapters\Laravel\IgnitionSolutionsRepository->getFromThrowable(Object(Whoops\Exception\ErrorException))
+#11 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Writer.php(123): NunoMaduro\Collision\Writer->renderSolution(Object(Whoops\Exception\Inspector))
+#12 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Handler.php(39): NunoMaduro\Collision\Writer->write(Object(Whoops\Exception\Inspector))
+#13 C:\xampp\htdocs\citas\vendor\filp\whoops\src\Whoops\Run.php(398): NunoMaduro\Collision\Handler->handle(Object(Whoops\Exception\ErrorException))
+#14 [internal function]: Whoops\Run->handleException(Object(Whoops\Exception\ErrorException))
+#15 {main}
+  thrown in C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\MergeConflictSolutionProvider.php on line 53
+
+   Symfony\Component\ErrorHandler\Error\FatalError 
+
+  Uncaught Whoops\Exception\ErrorException: Using ${var} in strings is deprecated, use {$var} instead in C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\MergeConflictSolutionProvider.php:53
+Stack trace:
+#0 C:\xampp\htdocs\citas\vendor\composer\ClassLoader.php(576): Whoops\Run->handleError(8192, 'Using ${var} in...', 'C:\\xampp\\htdocs...', 53)
+#1 C:\xampp\htdocs\citas\vendor\composer\ClassLoader.php(576): include()
+#2 C:\xampp\htdocs\citas\vendor\composer\ClassLoader.php(427): Composer\Autoload\{closure}('C:\\xampp\\htdocs...')
+#3 [internal function]: Composer\Autoload\ClassLoader->loadClass('Facade\\Ignition...')
+#4 C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\SolutionProviderRepository.php(50): class_implements('Facade\\Ignition...')
+#5 [internal function]: Facade\Ignition\SolutionProviders\SolutionProviderRepository->Facade\Ignition\SolutionProviders\{closure}('Facade\\Ignition...', 10)
+#6 C:\xampp\htdocs\citas\vendor\laravel\framework\src\Illuminate\Collections\Arr.php(717): array_filter(Array, Object(Closure), 1)
+#7 C:\xampp\htdocs\citas\vendor\laravel\framework\src\Illuminate\Collections\Collection.php(358): Illuminate\Support\Arr::where(Array, Object(Closure))
+#8 C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\SolutionProviderRepository.php(49): Illuminate\Support\Collection->filter(Object(Closure))
+#9 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Adapters\Laravel\IgnitionSolutionsRepository.php(36): Facade\Ignition\SolutionProviders\SolutionProviderRepository->getSolutionsForThrowable(Object(Whoops\Exception\ErrorException))
+#10 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Writer.php(244): NunoMaduro\Collision\Adapters\Laravel\IgnitionSolutionsRepository->getFromThrowable(Object(Whoops\Exception\ErrorException))
+#11 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Writer.php(123): NunoMaduro\Collision\Writer->renderSolution(Object(Whoops\Exception\Inspector))
+#12 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Handler.php(39): NunoMaduro\Collision\Writer->write(Object(Whoops\Exception\Inspector))
+#13 C:\xampp\htdocs\citas\vendor\filp\whoops\src\Whoops\Run.php(398): NunoMaduro\Collision\Handler->handle(Object(Whoops\Exception\ErrorException))
+#14 [internal function]: Whoops\Run->handleException(Object(Whoops\Exception\ErrorException))
+#15 {main}
+  thrown
+
+  at C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\MergeConflictSolutionProvider.php:53
+     49▕ 
+     50▕     protected function getCurrentBranch(string $directory): string
+     51▕     {
+     52▕         
+  ➜  53▕         $branch = "'".trim(shell_exec("cd ${directory}; git branch | grep \\* | cut -d ' ' -f2"))."'";
+     54▕ 
+     55▕         //$branch = "'".trim(shell_exec("cd {$directory}; git branch | grep \\* | cut -d ' ' -f2"))."'";
+     56▕ 
+     57▕
+PHP Fatal error:  Uncaught Whoops\Exception\ErrorException: Using ${var} in strings is deprecated, use {$var} instead in C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\MergeConflictSolutionProvider.php:53
+Stack trace:
+#0 C:\xampp\htdocs\citas\vendor\composer\ClassLoader.php(576): Whoops\Run->handleError(8192, 'Using ${var} in...', 'C:\\xampp\\htdocs...', 53)
+#1 C:\xampp\htdocs\citas\vendor\composer\ClassLoader.php(576): include()
+#2 C:\xampp\htdocs\citas\vendor\composer\ClassLoader.php(427): Composer\Autoload\{closure}('C:\\xampp\\htdocs...')
+#3 [internal function]: Composer\Autoload\ClassLoader->loadClass('Facade\\Ignition...')
+#4 C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\SolutionProviderRepository.php(50): class_implements('Facade\\Ignition...')
+#5 [internal function]: Facade\Ignition\SolutionProviders\SolutionProviderRepository->Facade\Ignition\SolutionProviders\{closure}('Facade\\Ignition...', 10)
+#6 C:\xampp\htdocs\citas\vendor\laravel\framework\src\Illuminate\Collections\Arr.php(717): array_filter(Array, Object(Closure), 1)
+#7 C:\xampp\htdocs\citas\vendor\laravel\framework\src\Illuminate\Collections\Collection.php(358): Illuminate\Support\Arr::where(Array, Object(Closure))
+#8 C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\SolutionProviderRepository.php(49): Illuminate\Support\Collection->filter(Object(Closure))
+#9 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Adapters\Laravel\IgnitionSolutionsRepository.php(36): Facade\Ignition\SolutionProviders\SolutionProviderRepository->getSolutionsForThrowable(Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#10 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Writer.php(244): NunoMaduro\Collision\Adapters\Laravel\IgnitionSolutionsRepository->getFromThrowable(Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#11 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Writer.php(123): NunoMaduro\Collision\Writer->renderSolution(Object(NunoMaduro\Collision\Adapters\Laravel\Inspector))
+#12 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Handler.php(39): NunoMaduro\Collision\Writer->write(Object(NunoMaduro\Collision\Adapters\Laravel\Inspector))
+#13 C:\xampp\htdocs\citas\vendor\nunomaduro\collision\src\Adapters\Laravel\ExceptionHandler.php(72): NunoMaduro\Collision\Handler->handle()
+#14 C:\xampp\htdocs\citas\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php(185): NunoMaduro\Collision\Adapters\Laravel\ExceptionHandler->renderForConsole(Object(Symfony\Component\Console\Output\ConsoleOutput), Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#15 C:\xampp\htdocs\citas\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php(171): Illuminate\Foundation\Bootstrap\HandleExceptions->renderForConsole(Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#16 C:\xampp\htdocs\citas\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php(209): Illuminate\Foundation\Bootstrap\HandleExceptions->handleException(Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#17 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->handleShutdown()
+#18 {main}
+  thrown in C:\xampp\htdocs\citas\vendor\facade\ignition\src\SolutionProviders\MergeConflictSolutionProvider.php on line 53

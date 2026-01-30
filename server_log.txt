@@ -1,0 +1,7 @@
+Request URI: /test.txt
+__DIR__: \\WSL.LOCALHOST\UBUNTU-22.04\home\cvalderrama\citas-huv\citas-huv
+CWD: C:\Windows
+User: 
+Checking file: \\WSL.LOCALHOST\UBUNTU-22.04\home\cvalderrama\citas-huv\citas-huv/public/test.txt
+Realpath: \\WSL.LOCALHOST\UBUNTU-22.04\home\cvalderrama\citas-huv\citas-huv\public\test.txt
+File exists: YES
