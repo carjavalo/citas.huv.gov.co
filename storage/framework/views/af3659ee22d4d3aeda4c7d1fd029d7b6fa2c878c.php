@@ -1,0 +1,83 @@
+<div>
+    <div class="py-12">
+        <?php if($modal): ?>
+            <div>
+                <?php
+if (! isset($_instance)) {
+    $html = \Livewire\Livewire::mount('eps.editar', ['epsId' => $id_eps,'eps_id' => $id_eps])->html();
+} elseif ($_instance->childHasBeenRendered('edit-eps'.now().$id_eps)) {
+    $componentId = $_instance->getRenderedChildComponentId('edit-eps'.now().$id_eps);
+    $componentTag = $_instance->getRenderedChildComponentTagName('edit-eps'.now().$id_eps);
+    $html = \Livewire\Livewire::dummyMount($componentId, $componentTag);
+    $_instance->preserveRenderedChild('edit-eps'.now().$id_eps);
+} else {
+    $response = \Livewire\Livewire::mount('eps.editar', ['epsId' => $id_eps,'eps_id' => $id_eps]);
+    $html = $response->html();
+    $_instance->logRenderedChild('edit-eps'.now().$id_eps, $response->id(), \Livewire\Livewire::getRootElementTagName($html));
+}
+echo $html;
+?>
+            </div>
+        <?php endif; ?>
+        <div class="max-w-min min-w-full mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+                <div class="flex flex-col">
+                    <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                        <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                            <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                            <div class="grid grid-cols-6 gap-6 mx-2 my-2">
+                                <div class="col-span-6 sm:col-span-1">
+                                    <label for="busqueda" class="block text-sm text-center font-medium  text-gray-700">Filtrar por nombre</label>
+                                    <input  type="text" wire:model="busqueda" id="busqueda" autocomplete="off" class="mt-1 focus:ring-blue-500 focus:blue-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" >
+                                </div>
+                                
+                            </div>
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                            <th scope="col" class="relative px-6 py-3">
+                                                <span class="sr-only">Edit</span>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <?php $__currentLoopData = $aseguradoras; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $eps): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <p><?php echo e($eps->id); ?></p>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <p><?php echo e($eps->nombre); ?></p>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <?php if($eps->estado == true): ?>
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"> Activo </span>
+                                                <?php else: ?>
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800"> Inactivo </span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button wire:click="abrirModal(<?php echo e($eps->id); ?>)" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Editar</button>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                    </tbody>
+                                </table>
+                                <?php echo e($aseguradoras->links()); ?>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php /**PATH C:\xampp\htdocs\citas\resources\views/livewire/eps/consulta.blade.php ENDPATH**/ ?>

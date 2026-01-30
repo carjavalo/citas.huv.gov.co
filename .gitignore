@@ -25,3 +25,6 @@ NUL
 CON
 PRN
 AUX
+
+# Large database exports
+database/data_export.json
