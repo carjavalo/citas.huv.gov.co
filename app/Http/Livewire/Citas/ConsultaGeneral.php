@@ -194,6 +194,10 @@ class ConsultaGeneral extends Component
                 'solicitudes.estado',
                 'solicitudes.soporte_patologia',
             ]);
+            if ($datos->isEmpty()) {
+                $this->emit('alertError', 'No se encontró la solicitud o cambió de estado.');
+                return;
+            }
             $this->usu_nomb         = $datos[0]->paciente_nombres.' '.$datos[0]->paciente_apellido1;
             $this->correo           = $datos[0]->email;
             $this->ndocumento       = $datos[0]->paciente_numero_documento;
@@ -238,6 +242,11 @@ class ConsultaGeneral extends Component
     public function cancelar()
     {
         $solicitud = solicitudes::where('id', $this->solicitud)->first();
+        if (!$solicitud) {
+            $this->emit('alertError', 'No se encontró la solicitud.');
+            $this->modal = false;
+            return;
+        }
         switch ($solicitud->estado_anterior) {
             case 'Espera':
                 $solicitud->update([
