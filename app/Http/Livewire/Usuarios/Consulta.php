@@ -142,12 +142,16 @@ class Consulta extends Component
     public function editar($id) //Esta función inicializa variables para mostrar en la modal
     {
         $usuario                        = User::where('id','=',$id)->first(['id','name','apellido1','apellido2','email','eps','tdocumento','ndocumento','sede_id','pservicio_id']);
+        if (!$usuario) {
+            $this->emit('alertError', 'No se encontró el usuario.');
+            return;
+        }
         $this->usu_id                   = $usuario->id;
         $this->nombres                  = $usuario->name; 
         $this->apellido1                = $usuario->apellido1;
         $this->apellido2                = $usuario->apellido2;
         $this->email                    = $usuario->email; 
-        $this->usu_rol                  = $usuario->roles->first()->name;
+        $this->usu_rol                  = optional($usuario->roles->first())->name ?? 'Sin rol';
         $this->usu_eps                  = $usuario->eps;
         $this->aseguradoras             = eps::all();
         $this->tipos_identificacion     = tipo_identificacion::all();
