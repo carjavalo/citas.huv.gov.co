@@ -21,13 +21,16 @@
         <div class="font-sans text-gray-900 antialiased">
             {{ $slot }}
         </div>
+
+        @livewireScripts
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+            Livewire.hook('message.failed', (message, component) => {
+                if (message.status === 419) {
+                    location.reload();
+                }
+            });
+        </script>
     </body>
-    @livewireScripts
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-        Livewire.onPageExpired((response, message) => {
-            location.reload()
-        })
-    </script>
 </html>

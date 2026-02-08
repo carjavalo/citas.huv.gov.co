@@ -151,9 +151,11 @@
                 text: 'Something went wrong!'
             });
         });
-        Livewire.onPageExpired((response, message) => {
-            location.reload()
-        })
+        Livewire.hook('message.failed', (message, component) => {
+            if (message.status === 419) {
+                location.reload();
+            }
+        });
     </script>
     <script>
     window.addEventListener('alert', event => { 
