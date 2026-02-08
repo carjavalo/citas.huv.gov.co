@@ -12,8 +12,7 @@
         -moz-appearance: textfield;
         }
     </style>
-    <x-guest-layout>
-        <div style="background-image: url('{{ asset('img/huv_fondo_2.jpg') }}'); background-size: cover; background-position: center; background-repeat: no-repeat; min-height: 100vh;" class="flex items-center justify-center py-12">
+    <div style="background-image: url('{{ asset('img/huv_fondo_2.jpg') }}'); background-size: cover; background-position: center; background-repeat: no-repeat; min-height: 100vh;" class="flex items-center justify-center py-12">
             <div class="w-full sm:max-w-2xl mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
                 <div class="flex justify-center mb-6">
                     <img src="{{ asset('huv-icon.png') }}" alt="Logo HUV" class="w-20 h-20">
@@ -151,5 +150,5 @@
                 </form>
             </div>
         </div>
-    </x-guest-layout>
+    </div>
 </div>
