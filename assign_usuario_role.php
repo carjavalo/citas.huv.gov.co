@@ -7,6 +7,7 @@ $kernel->bootstrap();
 
 use App\Models\User;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\DB;
 
 // Verificar que el rol "Usuario" exista
 $rolUsuario = Role::where('name', 'Usuario')->first();
@@ -15,18 +16,41 @@ if (!$rolUsuario) {
     exit(1);
 }
 
-// Usuarios sin ningún rol
-$sinRol = User::doesntHave('roles')->get();
-echo "Usuarios sin ningún rol: " . $sinRol->count() . "\n";
+echo "Rol 'Usuario' encontrado con ID: {$rolUsuario->id}\n";
 
-$actualizados = 0;
-foreach ($sinRol as $user) {
-    $user->assignRole('Usuario');
-    $actualizados++;
+// Contar usuarios sin ningún rol
+$sinRolCount = User::doesntHave('roles')->count();
+echo "Usuarios sin ningún rol: $sinRolCount\n";
+
+if ($sinRolCount === 0) {
+    echo "No hay usuarios sin rol. Nada que hacer.\n";
+    exit(0);
 }
 
-echo "Usuarios actualizados a rol 'Usuario': $actualizados\n";
+// Obtener IDs de usuarios sin rol
+$sinRolIds = User::doesntHave('roles')->pluck('id');
 
-// Verificación final
-$sinRolFinal = User::doesntHave('roles')->count();
-echo "Usuarios sin rol después de actualización: $sinRolFinal\n";
+// Determinar el guard del rol
+$guard = $rolUsuario->guard_name ?? 'web';
+
+// Insertar en lote en la tabla model_has_roles
+$inserted = 0;
+$chunks = $sinRolIds->chunk(1000);
+
+foreach ($chunks as $chunk) {
+    $data = [];
+    foreach ($chunk as $userId) {
+        $data[] = [
+            'role_id' => $rolUsuario->id,
+            'model_type' => 'App\\Models\\User',
+            'model_id' => $userId,
+        ];
+    }
+    DB::table('model_has_roles')->insert($data);
+    $inserted += count($data);
+    echo "  Progreso: $inserted / $sinRolCount\n";
+}
+
+echo "\n=== Completado ===\n";
+echo "Usuarios asignados al rol 'Usuario': $inserted\n";
+echo "Usuarios sin rol ahora: " . User::doesntHave('roles')->count() . "\n";
