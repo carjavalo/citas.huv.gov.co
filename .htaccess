@@ -5,9 +5,7 @@
 
 # Hide the contents of directories
 IndexIgnore public/Documentos/*
-# Deny access to files with extensions .ini, .psd, .log, .sh
-<FilesMatch "\.(pdf|png|jpg)$">
-Order allow,deny
-Deny from all
-
-</FilesMatch>
+# Deny direct access to Documentos files (patient documents)
+<IfModule mod_rewrite.c>
+    RewriteRule ^public/Documentos/.*\.(pdf|png|jpg)$ - [F,L]
+</IfModule>
