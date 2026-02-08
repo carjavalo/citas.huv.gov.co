@@ -1,3 +1,8 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
 # Hide the contents of directories
 IndexIgnore public/Documentos/*
 # Deny access to files with extensions .ini, .psd, .log, .sh
