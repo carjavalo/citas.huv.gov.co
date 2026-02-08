@@ -216,7 +216,10 @@ class Consulta extends Component
                 }
 
                 $user = User::find($this->usu_id);
-                $user->removeRole($user->roles->first()->name);
+                $currentRole = optional($user->roles->first())->name;
+                if ($currentRole) {
+                    $user->removeRole($currentRole);
+                }
                 $user->assignRole($this->usu_rol);
                 // Si es Consultor, Coordinador o Administrador, guardar sede y pservicio; si no, limpiarlos
                 $rolesConSede = ['Consultor', 'Coordinador', 'Administrador'];
