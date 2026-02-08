@@ -29,8 +29,10 @@ class AppServiceProvider extends ServiceProvider
         paginator::useBootstrap();
         Schema::defaultStringLength(191);
 
-        // Force HTTPS when behind a proxy (cPanel/LiteSpeed)
-        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+        // Force HTTPS when APP_URL uses https or behind a proxy
+        if (str_starts_with(config('app.url'), 'https') || 
+            (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+            (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')) {
             URL::forceScheme('https');
         }
     }
