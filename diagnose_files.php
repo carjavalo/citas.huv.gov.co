@@ -2,6 +2,7 @@
 
 /**
  * Diagnóstico: ¿cuántos archivos hay en disco vs cuántos referencia la BD?
+ * Las rutas están en columnas: pachis, pacordmed, pacauto, pacdocid, certfdo_cita, soporte_patologia
  */
 
 require __DIR__ . '/vendor/autoload.php';
@@ -39,32 +40,41 @@ foreach ($rii as $file) {
 echo "Archivos físicos en disco: $totalFiles\n";
 echo "Directorios en disco: $totalDirs\n\n";
 
-// 2. Contar rutas únicas en BD
-$dbPaths = DB::table('solicitudes')
-    ->whereNotNull('ruta_archivos')
-    ->where('ruta_archivos', '!=', '')
-    ->pluck('ruta_archivos');
+// 2. Recopilar todas las rutas de archivos de la BD (de las columnas individuales)
+$columns = ['pachis', 'pacordmed', 'pacauto', 'pacdocid', 'certfdo_cita', 'soporte_patologia'];
+$allPaths = collect();
 
-$totalDbPaths = $dbPaths->count();
-echo "Rutas en BD (solicitudes.ruta_archivos): $totalDbPaths\n\n";
+foreach ($columns as $col) {
+    $paths = DB::table('solicitudes')
+        ->whereNotNull($col)
+        ->where($col, '!=', '')
+        ->pluck($col);
+    echo "Columna $col: {$paths->count()} rutas\n";
+    $allPaths = $allPaths->merge($paths);
+}
+
+$uniquePaths = $allPaths->unique();
+echo "\nTotal rutas en BD: {$allPaths->count()}\n";
+echo "Rutas únicas: {$uniquePaths->count()}\n\n";
 
 // 3. Verificar cuántos "not found" tienen directorio que sí existe
+$found = 0;
 $notFoundDirExists = 0;
 $notFoundDirMissing = 0;
 $sampleNotFoundDirExists = [];
 $sampleNotFoundDirMissing = [];
 
-foreach ($dbPaths as $ruta) {
+foreach ($uniquePaths as $ruta) {
     $fullPath = public_path($ruta);
     if (file_exists($fullPath)) {
-        continue; // ya existe, skip
+        $found++;
+        continue;
     }
     
     $dir = dirname($fullPath);
     if (is_dir($dir)) {
         $notFoundDirExists++;
-        if (count($sampleNotFoundDirExists) < 5) {
-            // Mostrar qué archivos HAY en ese directorio
+        if (count($sampleNotFoundDirExists) < 8) {
             $filesInDir = @scandir($dir);
             $filesInDir = array_diff($filesInDir ?: [], ['.', '..']);
             $sampleNotFoundDirExists[] = [
@@ -81,9 +91,10 @@ foreach ($dbPaths as $ruta) {
     }
 }
 
-echo "=== Archivos no encontrados ===\n";
-echo "Directorio existe pero archivo no: $notFoundDirExists\n";
-echo "Directorio NO existe: $notFoundDirMissing\n\n";
+echo "=== Resultado ===\n";
+echo "Archivos encontrados OK: $found\n";
+echo "Dir existe pero archivo no (posible encoding): $notFoundDirExists\n";
+echo "Directorio NO existe (nunca subido): $notFoundDirMissing\n\n";
 
 if (!empty($sampleNotFoundDirExists)) {
     echo "=== Muestra: dir existe, archivo no (posible encoding) ===\n";
@@ -93,7 +104,6 @@ if (!empty($sampleNotFoundDirExists)) {
         echo "  Archivos reales en dir:\n";
         foreach ($s['actual_files'] as $f) {
             echo "    - $f\n";
-            // Mostrar bytes hex del nombre
             echo "      hex: " . bin2hex($f) . "\n";
         }
         echo "  Esperado hex: " . bin2hex($s['expected']) . "\n";
