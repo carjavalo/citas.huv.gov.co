@@ -43,7 +43,6 @@
                         <div class="col-span-6 sm:col-span-1">
                             <label for="filestado" class="block text-sm text-center font-medium text-gray-700">Filtrar por estado</label>
                             <select wire:model="filestado" id="filestado" autocomplete="off" class="mt-1 focus:ring-blue-500 focus:blue-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                                <option value="">Todos</option>
                                 <option value="Pendiente">Pendiente</option>
                                 <option value="Espera">Espera</option>
                                 <option value="Procesando">En proceso</option>
