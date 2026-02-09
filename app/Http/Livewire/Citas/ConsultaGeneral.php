@@ -77,7 +77,11 @@ class ConsultaGeneral extends Component
             ->join('servicios','solicitudes.espec','=','servicios.servcod')
             ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
             ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id')
-            ->where([['solicitudes.estado','=',$this->filestado],['servnomb','like','%'.$this->filserv.'%'],['users.ndocumento','like','%'.$this->filpaciente.'%'],['eps.nombre','like','%'.$this->fileps.'%']]);
+            ->where([['servnomb','like','%'.$this->filserv.'%'],['users.ndocumento','like','%'.$this->filpaciente.'%'],['eps.nombre','like','%'.$this->fileps.'%']]);
+
+        if ($this->filestado !== '' && $this->filestado !== null) {
+            $query->where('solicitudes.estado', '=', $this->filestado);
+        }
         
         if ($this->filsede !== '') {
             $query->where('sedes.id', $this->filsede);
@@ -444,7 +448,11 @@ class ConsultaGeneral extends Component
             ->join('servicios','solicitudes.espec','=','servicios.servcod')
             ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
             ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id')
-            ->where([['solicitudes.estado','=',$this->filestado],['servnomb','like','%'.$this->filserv.'%'],['users.ndocumento','like','%'.$this->filpaciente.'%'],['eps.nombre','like','%'.$this->fileps.'%']]);
+            ->where([['servnomb','like','%'.$this->filserv.'%'],['users.ndocumento','like','%'.$this->filpaciente.'%'],['eps.nombre','like','%'.$this->fileps.'%']]);
+
+        if ($this->filestado !== '' && $this->filestado !== null) {
+            $query->where('solicitudes.estado', '=', $this->filestado);
+        }
         
         if ($this->filsede !== '') {
             $query->where('sedes.id', $this->filsede);
