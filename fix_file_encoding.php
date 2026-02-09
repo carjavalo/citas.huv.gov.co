@@ -2,8 +2,8 @@
 
 /**
  * Script para corregir nombres de archivos con codificación incorrecta en Documentos/
- * Los archivos en disco tienen nombres en Latin-1/CP1252 pero la BD los tiene en UTF-8.
- * Este script renombra los archivos en disco para que coincidan con la BD.
+ * Los archivos en disco tienen nombres con bytes corruptos pero la BD los tiene en UTF-8.
+ * Compara usando solo caracteres ASCII para encontrar coincidencias y renombrar.
  */
 
 require __DIR__ . '/vendor/autoload.php';
@@ -21,6 +21,11 @@ if (!is_dir($basePath)) {
 }
 
 echo "=== Corrección de nombres de archivos con encoding incorrecto ===\n\n";
+
+// Función para extraer solo caracteres ASCII de un string
+function asciiOnly($str) {
+    return preg_replace('/[^\x20-\x7E]/', '', $str);
+}
 
 // Obtener todas las rutas de archivos de la BD
 $columns = ['pachis', 'pacordmed', 'pacauto', 'pacdocid', 'certfdo_cita', 'soporte_patologia'];
@@ -43,6 +48,7 @@ $fixed = 0;
 $notFound = 0;
 $alreadyOk = 0;
 $errors = 0;
+$dirCache = []; // Cache de archivos por directorio
 
 foreach ($dbPaths as $dbPath) {
     $fullPath = public_path($dbPath);
@@ -53,41 +59,43 @@ foreach ($dbPaths as $dbPath) {
         continue;
     }
     
-    // El archivo no existe con el nombre UTF-8. Buscar en el directorio
     $dir = dirname($fullPath);
     $expectedBasename = basename($dbPath);
+    $expectedAscii = asciiOnly($expectedBasename);
     
     if (!is_dir($dir)) {
         $notFound++;
         continue;
     }
     
-    // Listar archivos en el directorio y buscar coincidencia
-    $files = @scandir($dir);
-    if ($files === false) {
-        $notFound++;
-        continue;
+    // Cache de archivos del directorio
+    if (!isset($dirCache[$dir])) {
+        $files = @scandir($dir);
+        if ($files === false) {
+            $notFound++;
+            continue;
+        }
+        $dirCache[$dir] = array_filter($files, function($f) { return $f !== '.' && $f !== '..'; });
     }
     
     $matched = false;
-    foreach ($files as $file) {
-        if ($file === '.' || $file === '..') continue;
+    foreach ($dirCache[$dir] as $key => $file) {
+        $fileAscii = asciiOnly($file);
         
-        // Intentar convertir el nombre del archivo de Latin-1 a UTF-8
-        $converted = @iconv('CP1252', 'UTF-8//IGNORE', $file);
-        if ($converted === false) {
-            $converted = @mb_convert_encoding($file, 'UTF-8', 'ISO-8859-1');
-        }
-        
-        if ($converted === $expectedBasename) {
-            // Encontramos el archivo con nombre corrupto, renombrarlo
-            $oldPath = $dir . DIRECTORY_SEPARATOR . $file;
-            $newPath = $dir . DIRECTORY_SEPARATOR . $expectedBasename;
+        // Comparar partes ASCII — si coinciden, es el mismo archivo con encoding corrupto
+        if ($fileAscii === $expectedAscii && $file !== $expectedBasename) {
+            $oldPath = $dir . '/' . $file;
+            $newPath = $dir . '/' . $expectedBasename;
             
             if (@rename($oldPath, $newPath)) {
                 $fixed++;
-                if ($fixed <= 20) {
-                    echo "  Renombrado: $file => $expectedBasename\n";
+                // Actualizar cache
+                unset($dirCache[$dir][$key]);
+                $dirCache[$dir][] = $expectedBasename;
+                
+                if ($fixed <= 30) {
+                    echo "  Renombrado: $file\n";
+                    echo "         => $expectedBasename\n";
                 }
                 $matched = true;
                 break;
@@ -108,5 +116,5 @@ foreach ($dbPaths as $dbPath) {
 echo "\n=== Resultado ===\n";
 echo "Archivos ya correctos (UTF-8): $alreadyOk\n";
 echo "Archivos renombrados: $fixed\n";
-echo "Archivos no encontrados: $notFound\n";
+echo "Archivos no encontrados en disco: $notFound\n";
 echo "Errores: $errors\n";
