@@ -5,7 +5,3 @@
 
 # Hide the contents of directories
 IndexIgnore public/Documentos/*
-# Deny direct access to Documentos files (patient documents)
-<IfModule mod_rewrite.c>
-    RewriteRule ^public/Documentos/.*\.(pdf|png|jpg)$ - [F,L]
-</IfModule>
