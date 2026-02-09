@@ -1,7 +1,7 @@
 <div>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-blue-800 leading-tight">
-            {{ __('Solicitudes pendientes') }}
+            {{ __('Solicitudes') }}
         </h2>
     </x-slot>
     @if ($modal)
@@ -43,6 +43,7 @@
                         <div class="col-span-6 sm:col-span-1">
                             <label for="filestado" class="block text-sm text-center font-medium text-gray-700">Filtrar por estado</label>
                             <select wire:model="filestado" id="filestado" autocomplete="off" class="mt-1 focus:ring-blue-500 focus:blue-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                <option value="">Todos</option>
                                 <option value="Pendiente">Pendiente</option>
                                 <option value="Espera">Espera</option>
                                 <option value="Procesando">En proceso</option>
@@ -197,9 +198,25 @@
                                                     <div class="text-sm text-gray-900">{{ $solicitud->servnomb }}</div>
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-center">
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-200 text-yellow-800">
-                                                        {{ $solicitud->estado }}
-                                                    </span>
+                                                    @switch($solicitud->estado)
+                                                        @case('Pendiente')
+                                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-200 text-yellow-800">Pendiente</span>
+                                                            @break
+                                                        @case('Espera')
+                                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-200 text-orange-800">Espera</span>
+                                                            @break
+                                                        @case('Procesando')
+                                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-200 text-blue-800">En proceso</span>
+                                                            @break
+                                                        @case('Rechazada')
+                                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-200 text-red-800">Rechazado</span>
+                                                            @break
+                                                        @case('Agendado')
+                                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-200 text-green-800">Agendado</span>
+                                                            @break
+                                                        @default
+                                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-800">{{ $solicitud->estado }}</span>
+                                                    @endswitch
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">

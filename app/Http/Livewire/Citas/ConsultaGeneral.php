@@ -67,7 +67,7 @@ class ConsultaGeneral extends Component
     public function mount()
     {
         $this->authorize('citas.consulta.agendar');
-        $this->filestado = 'Pendiente';
+        $this->filestado = '';
     }
 
     public function render()
