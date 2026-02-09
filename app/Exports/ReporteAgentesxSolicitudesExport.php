@@ -89,7 +89,7 @@ class ReporteAgentesxSolicitudesExport implements FromQuery, WithHeadings, WithC
                 ->where([
                     ['solicitudes.updated_at','>=',''.$this->desde.''],
                     ['solicitudes.updated_at','<',''.$this->hasta.''],
-                    ['solicitudes.estado','<>','PRUEBA'],
+                    ['solicitudes.estado','<>','Pendiente'],
             ]);
         
         // Aplicar filtros de visibilidad según rol

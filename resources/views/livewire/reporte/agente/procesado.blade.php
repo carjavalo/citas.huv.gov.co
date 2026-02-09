@@ -38,11 +38,12 @@
                                     <input class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" type="date" wire:model="fecha_hasta" id="hasta" max="{{ $hoy }}">
                                 </div>
                                 <div class="col-span-6 sm:col-span-2">
-                                    @if($filtro_ok)
-                                    <button class="bg-green-600 hover:bg-green-700 block mt-7 text-white font-bold py-2 px-4 rounded mx-1" wire:click="exportar()">Exportar reporte</button>
-                                    @else
-                                    <button class="bg-blue-600 hover:bg-blue-700 block mt-7 text-white font-bold py-2 px-4 rounded mx-1" wire:click="filtroRangoFecha()">Aplicar filtro</button>
-                                    @endif
+                                    <div class="flex gap-2 mt-7">
+                                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" wire:click="filtroRangoFecha()">Aplicar filtro</button>
+                                        @if($filtro_ok)
+                                        <button class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" wire:click="exportar()">Exportar</button>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>

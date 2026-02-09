@@ -83,13 +83,16 @@ class Procesado extends Component
             }
         }else
         {
+            // Sumar 1 día a fecha_hasta para que sea inclusiva
+            $fechaHastaInclusive = Carbon::parse($this->fecha_hasta)->addDay()->format('Y-m-d');
+
             // Consulta con filtrado por rol
             $query = solicitudes::join('servicios', 'solicitudes.espec', '=', 'servicios.servcod')
                 ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
                 ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id')
                 ->where('solicitudes.updated_at','>=', $this->fecha_desde)
-                ->where('solicitudes.updated_at','<', $this->fecha_hasta)
-                ->where('solicitudes.estado','<>','PRUEBA');
+                ->where('solicitudes.updated_at','<', $fechaHastaInclusive)
+                ->where('solicitudes.estado','<>','Pendiente');
             
             $user = Auth::user();
             
@@ -104,7 +107,7 @@ class Procesado extends Component
             
             $this->solicitudes = $query->select('solicitudes.*')->get();
             $this->filtro_ok = true;
-            $this->emit('alertSuccess','Filtro aplicado');
+            $this->emit('alertSuccess','Filtro aplicado correctamente. Se encontraron ' . $this->solicitudes->count() . ' solicitudes.');
         }
 
     }
@@ -112,7 +115,8 @@ class Procesado extends Component
     public function exportar()
     {
         $this->authorize('admin.reporte.agentes.exportar.filtro_fecha');
-        return (new ReporteAgentesxSolicitudesExport($this->fecha_desde,$this->fecha_hasta))->download('reporte_agentes_desde_'.$this->fecha_desde.'_hasta_'.$this->fecha_hasta.'_.xlsx'); //Exporta reporte con rango de fechas
+        $fechaHastaInclusive = Carbon::parse($this->fecha_hasta)->addDay()->format('Y-m-d');
+        return (new ReporteAgentesxSolicitudesExport($this->fecha_desde, $fechaHastaInclusive))->download('reporte_agentes_desde_'.$this->fecha_desde.'_hasta_'.$this->fecha_hasta.'_.xlsx');
     }
 
     public function exportarHoy()
