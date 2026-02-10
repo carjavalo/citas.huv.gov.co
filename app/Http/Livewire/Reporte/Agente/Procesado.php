@@ -11,6 +11,7 @@ use Livewire\Component;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class Procesado extends Component
 {
@@ -20,24 +21,22 @@ class Procesado extends Component
     public $fecha_desde = null, $fecha_hasta = null, $filtro_ok = false; //Variables para filtrar por rango de fechas
     public $hoy, $mañana; //Filtro diario
 
-    public function mount()
+    /**
+     * Carga las solicitudes procesadas con datos detallados de paciente, EPS y servicio.
+     */
+    private function cargarSolicitudes($fechaDesde, $fechaHasta)
     {
-        $this->authorize('admin.reporte.agentes');
-        $this->hoy          = Carbon::now()->format('Y-m-d');
-        $this->mañana       = Carbon::tomorrow()->format('Y-m-d');
-        
-        // Consulta base de solicitudes procesadas del día actual
         $query = solicitudes::join('servicios', 'solicitudes.espec', '=', 'servicios.servcod')
             ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
             ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id')
-            ->where('solicitudes.updated_at','>=', $this->hoy)
-            ->where('solicitudes.updated_at','<', $this->mañana)
-            ->where('solicitudes.estado','<>','Pendiente');
-        
-        // Restricción de visibilidad según rol del usuario
-        // Super Admin ve todo. Administrador, Coordinador y Consultor filtran por sede y pservicio.
+            ->leftJoin('users as paciente', 'solicitudes.pacid', '=', 'paciente.id')
+            ->leftJoin('eps', 'paciente.eps', '=', 'eps.id')
+            ->leftJoin('tipo_identificacions', 'paciente.tdocumento', '=', 'tipo_identificacions.id')
+            ->where('solicitudes.updated_at', '>=', $fechaDesde)
+            ->where('solicitudes.updated_at', '<', $fechaHasta)
+            ->where('solicitudes.estado', '<>', 'Pendiente');
+
         $user = Auth::user();
-        
         if (!$user->hasRole('Super Admin')) {
             if ($user->sede_id) {
                 $query->where('sedes.id', $user->sede_id);
@@ -46,14 +45,40 @@ class Procesado extends Component
                 $query->where('pservicios.id', $user->pservicio_id);
             }
         }
-        
-        $this->solicitudes = $query->select('solicitudes.*')->get();
-        
-        // Filtrar agentes según rol y sede/servicio del usuario actual
+
+        return $query->select(
+            'solicitudes.id',
+            'solicitudes.pacid',
+            'solicitudes.espec',
+            'solicitudes.estado',
+            'solicitudes.usercod',
+            'solicitudes.created_at',
+            'solicitudes.updated_at',
+            'solicitudes.motivo_rechazo',
+            'solicitudes.motivo_espera',
+            DB::raw('paciente.name as paciente_nombre'),
+            DB::raw('paciente.apellido1 as paciente_apellido1'),
+            DB::raw('paciente.apellido2 as paciente_apellido2'),
+            DB::raw('paciente.ndocumento as paciente_ndocumento'),
+            DB::raw('tipo_identificacions.nombre as tipo_doc'),
+            DB::raw('eps.nombre as eps_nombre'),
+            DB::raw('servicios.servnomb as servicio_nombre')
+        )->orderBy('solicitudes.updated_at', 'desc')->get();
+    }
+
+    public function mount()
+    {
+        $this->authorize('admin.reporte.agentes');
+        $this->hoy    = Carbon::now()->format('Y-m-d');
+        $this->mañana = Carbon::tomorrow()->format('Y-m-d');
+
+        $this->solicitudes = $this->cargarSolicitudes($this->hoy, $this->mañana);
+
+        // Filtrar agentes (Consultores) según rol y sede/servicio del usuario actual
+        $user = Auth::user();
         $agentesQuery = User::whereHas('roles', function($q){
             $q->where('name', 'Consultor');
         });
-        
         if (!$user->hasRole('Super Admin')) {
             if ($user->sede_id) {
                 $agentesQuery->where('sede_id', $user->sede_id);
@@ -62,7 +87,6 @@ class Procesado extends Component
                 $agentesQuery->where('pservicio_id', $user->pservicio_id);
             }
         }
-        
         $this->agentes = $agentesQuery->orderBy('name','asc')->get(['id','name','apellido1','apellido2']);
     }
     public function render()
@@ -70,46 +94,21 @@ class Procesado extends Component
         return view('livewire.reporte.agente.procesado');
     }
 
-    public function filtroRangoFecha() //Esta función se ejecuta cuando el usuario realiza click en "Aplicar filtro"
+    public function filtroRangoFecha()
     {
-        if(!isset($this->fecha_desde) || !isset($this->fecha_hasta))//Para evitar error de variable sin inicializar.
+        if(!isset($this->fecha_desde) || !isset($this->fecha_hasta))
         {
-            if($this->fecha_desde == null)
-            {
-                $this->emit('alertError','Seleccione la fecha desde.'); //Evento para emitir alerta
-            }else
-            {
-                $this->emit('alertError','Seleccione una fecha hasta.'); //Evento para emitir alerta
+            if($this->fecha_desde == null) {
+                $this->emit('alertError','Seleccione la fecha desde.');
+            } else {
+                $this->emit('alertError','Seleccione una fecha hasta.');
             }
-        }else
-        {
-            // Sumar 1 día a fecha_hasta para que sea inclusiva
+        } else {
             $fechaHastaInclusive = Carbon::parse($this->fecha_hasta)->addDay()->format('Y-m-d');
-
-            // Consulta con filtrado por rol
-            $query = solicitudes::join('servicios', 'solicitudes.espec', '=', 'servicios.servcod')
-                ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
-                ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id')
-                ->where('solicitudes.updated_at','>=', $this->fecha_desde)
-                ->where('solicitudes.updated_at','<', $fechaHastaInclusive)
-                ->where('solicitudes.estado','<>','Pendiente');
-            
-            $user = Auth::user();
-            
-            if (!$user->hasRole('Super Admin')) {
-                if ($user->sede_id) {
-                    $query->where('sedes.id', $user->sede_id);
-                }
-                if ($user->pservicio_id) {
-                    $query->where('pservicios.id', $user->pservicio_id);
-                }
-            }
-            
-            $this->solicitudes = $query->select('solicitudes.*')->get();
+            $this->solicitudes = $this->cargarSolicitudes($this->fecha_desde, $fechaHastaInclusive);
             $this->filtro_ok = true;
             $this->emit('alertSuccess','Filtro aplicado correctamente. Se encontraron ' . $this->solicitudes->count() . ' solicitudes.');
         }
-
     }
 
     public function exportar()
