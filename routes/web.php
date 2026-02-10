@@ -36,6 +36,8 @@ use Illuminate\Support\Facades\Auth;
 
 Route::get('/registro', UsuariosRegistro::class)->name('registro');
 
+// Ruta para capturar accesos directos a /Documentos/* (URLs antiguas o directas)
+Route::get('/Documentos/{path}', [DocumentoController::class, 'verDirecto'])->where('path', '.*')->middleware(['auth:sanctum', 'verified']);
 
 Route::get('/prueba', function(){
     $solicitudes = solicitudes::all();

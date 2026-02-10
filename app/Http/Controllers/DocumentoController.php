@@ -21,8 +21,35 @@ class DocumentoController extends Controller
         // Decodificar la ruta que viene en base64 URL-safe
         $rutaDecodificada = self::base64UrlDecode($path);
         
+        return $this->servirDocumento($rutaDecodificada);
+    }
+
+    /**
+     * Sirve un documento accedido directamente por la ruta /Documentos/{path}
+     * Esta ruta captura URLs antiguas o accesos directos
+     * 
+     * @param Request $request
+     * @param string $path - Ruta relativa del archivo (sin el prefijo Documentos/)
+     * @return Response
+     */
+    public function verDirecto(Request $request, $path)
+    {
+        // Construir la ruta completa con el prefijo Documentos/
+        $rutaRelativa = 'Documentos/' . $path;
+        
+        return $this->servirDocumento($rutaRelativa);
+    }
+
+    /**
+     * Método común para servir documentos
+     * 
+     * @param string $rutaRelativa - Ruta relativa del documento
+     * @return Response
+     */
+    private function servirDocumento($rutaRelativa)
+    {
         // Construir la ruta completa
-        $rutaCompleta = public_path($rutaDecodificada);
+        $rutaCompleta = public_path($rutaRelativa);
         
         // Verificar que el archivo existe
         if (!file_exists($rutaCompleta)) {
