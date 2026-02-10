@@ -92,7 +92,7 @@
                                             </div>
                                             <div class="ml-4 flex-shrink-0">
                                                 @if($datos->certfdo_cita <> null)
-                                                <a target="_blank" href="{{asset($datos->certfdo_cita)}}" class="font-medium text-blue-600 hover:text-blue-500"> Ver </a>
+                                                <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($datos->certfdo_cita) }}" class="font-medium text-blue-600 hover:text-blue-500"> Ver </a>
                                                 @else
                                                 <p>Pendiente por ruta</p>
                                                 @endif
@@ -108,7 +108,7 @@
                                                 <span class="ml-2 flex-1 w-0 truncate"> Historia clínica </span>
                                             </div>
                                             <div class="ml-4 flex-shrink-0">
-                                                <a href="{{asset($datos->pachis)}}" class="font-medium text-blue-600 hover:text-blue-500"> Ver </a>
+                                                <a href="{{ \App\Http\Controllers\DocumentoController::generarUrl($datos->pachis) }}" class="font-medium text-blue-600 hover:text-blue-500"> Ver </a>
                                             </div>
                                         </li>
                                         <li class="pl-3 pr-4 py-3 flex items-center justify-between text-sm">
@@ -120,7 +120,7 @@
                                                 <span class="ml-2 flex-1 w-0 truncate"> Documento identidad </span>
                                             </div>
                                             <div class="ml-4 flex-shrink-0">
-                                                <a target="_blank" href="{{asset($datos->pacdocid)}}" class="font-medium text-blue-600 hover:text-blue-500"> Ver </a>
+                                                <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($datos->pacdocid) }}" class="font-medium text-blue-600 hover:text-blue-500"> Ver </a>
                                             </div>
                                         </li>
                                         <li class="pl-3 pr-4 py-3 flex items-center justify-between text-sm">
@@ -133,7 +133,7 @@
                                             </div>
                                             <div class="ml-4 flex-shrink-0">
                                                 @if ($datos->pacauto <> null)
-                                                <a target="_blank" href="{{asset($datos->pacauto)}}" class="font-medium text-blue-600 hover:text-blue-500"> Ver </a>
+                                                <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($datos->pacauto) }}" class="font-medium text-blue-600 hover:text-blue-500"> Ver </a>
                                                 @else
                                                 <p>Sin adjunto</p>
                                                 @endif
@@ -149,7 +149,7 @@
                                             </div>
                                             <div class="ml-4 flex-shrink-0">
                                                 @if ($datos->pacordmed <> null)
-                                                <a target="_blank" href="{{asset($datos->pacordmed)}}" class="font-medium text-blue-600 hover:text-blue-500"> Ver </a>
+                                                <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($datos->pacordmed) }}" class="font-medium text-blue-600 hover:text-blue-500"> Ver </a>
                                                 @else
                                                 <p>Sin adjunto</p>
                                                 @endif

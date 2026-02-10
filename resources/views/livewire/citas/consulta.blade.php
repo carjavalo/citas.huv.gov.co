@@ -67,13 +67,13 @@
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                        <a target="_blank" href="{{asset($cita->pachis)}}">Ver</a>
+                                                        <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($cita->pachis) }}">Ver</a>
                                                     </span>
                                                 </td>
                                                 @if($cita->pacauto<>null)
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                        <a target="_blank" href="{{asset($cita->pacauto)}}">Ver</a>
+                                                        <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($cita->pacauto) }}">Ver</a>
                                                     </span>
                                                 </td>
                                                 @else
@@ -81,7 +81,7 @@
                                                 @endif
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                        <a target="_blank" href="{{asset($cita->pacordmed)}}">Ver</a>
+                                                        <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($cita->pacordmed) }}">Ver</a>
                                                     </span>
                                                 </td>
                                             </tr>

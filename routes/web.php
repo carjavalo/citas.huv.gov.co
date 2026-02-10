@@ -13,6 +13,7 @@ use App\Http\Livewire\GodsonRequestComponent;
 use App\Http\Livewire\Reporte\Agente\Procesado;
 use App\Http\Controllers\reportecitas;
 use App\Http\Controllers\servicioscontroller;
+use App\Http\Controllers\DocumentoController;
 use App\Http\Livewire\Servicios\Consulta as ConsultarServicios;
 use App\Http\Livewire\Sedes\Consulta as ConsultarSedes;
 use App\Http\Livewire\Pservicios\Consulta as ConsultarPservicios;
@@ -44,6 +45,9 @@ Route::get('/prueba', function(){
 
 
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+
+    // Ruta para visualizar documentos con espacios y caracteres especiales
+    Route::get('/documento/ver/{path}', [DocumentoController::class, 'ver'])->name('documento.ver')->where('path', '.*');
 
     Route::get('/consulta/mis-solicitudes',     CitasUsuario::class)->name('cita.consulta');
     Route::get('/consulta/solicitudes',         ConsultarCitas::class)->name('cita.consultas');/* ******* */

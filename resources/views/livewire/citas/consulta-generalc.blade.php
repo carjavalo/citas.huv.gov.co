@@ -114,18 +114,18 @@
                                                 </td>
                                                 <!-- <td class="px-6 py-4 whitespace-nowrap">
                                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                                <a target="_blank" href="{{asset($solicitud->pachis)}}">Historia</a>
+                                                                <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($solicitud->pachis) }}">Historia</a>
                                                             </span>
                                                             @if($solicitud->pacauto<>null)
                                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                                <a target="_blank" href="{{asset($solicitud->pacauto)}}">Autorizacion</a>
+                                                                <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($solicitud->pacauto) }}">Autorizacion</a>
                                                             </span>
                                                             @endif
                                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                                <a target="_blank" href="{{asset($solicitud->pacordmed)}}">Orden Médica</a>
+                                                                <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($solicitud->pacordmed) }}">Orden Médica</a>
                                                             </span>
                                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                                <a target="_blank" href="{{asset($solicitud->pacdocid)}}">Documento</a>
+                                                                <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($solicitud->pacdocid) }}">Documento</a>
                                                             </span>
                                                         </td> -->
                                                 <td class="px-6 py-4 whitespace-nowrap text-center">

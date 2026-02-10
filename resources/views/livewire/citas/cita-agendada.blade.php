@@ -35,23 +35,23 @@
                     <div class="col-span-6 mx-2 mb-2">
                         <label for="">Documentos:</label>
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            <a target="_blank" href="{{asset($archivos['historia'])}}">Historia</a>
+                            <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($archivos['historia']) }}">Historia</a>
                         </span>
                         @if($archivos['autorizacion'])
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                <a target="_blank" href="{{asset($archivos['autorizacion'])}}">Autorizacion</a>
+                                <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($archivos['autorizacion']) }}">Autorizacion</a>
                             </span>
                         @endif
                         @if($archivos['soporte_patologia'])
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                <a target="_blank" href="{{asset($archivos['soporte_patologia'])}}">Soporte patología</a>
+                                <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($archivos['soporte_patologia']) }}">Soporte patología</a>
                             </span>
                         @endif
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                <a target="_blank" href="{{asset($archivos['orden'])}}">Orden Médica</a>
+                                <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($archivos['orden']) }}">Orden Médica</a>
                             </span>
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                <a target="_blank" href="{{asset($archivos['documento'])}}">Documento</a>
+                                <a target="_blank" href="{{ \App\Http\Controllers\DocumentoController::generarUrl($archivos['documento']) }}">Documento</a>
                             </span>
                     </div>
                     @if ($observacion)

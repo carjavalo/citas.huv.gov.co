@@ -13,13 +13,13 @@ class DocumentoController extends Controller
      * Maneja correctamente espacios y caracteres especiales en nombres de archivo
      * 
      * @param Request $request
-     * @param string $path - Ruta codificada en base64
+     * @param string $path - Ruta codificada en base64 URL-safe
      * @return Response
      */
     public function ver(Request $request, $path)
     {
-        // Decodificar la ruta que viene en base64
-        $rutaDecodificada = base64_decode($path);
+        // Decodificar la ruta que viene en base64 URL-safe
+        $rutaDecodificada = self::base64UrlDecode($path);
         
         // Construir la ruta completa
         $rutaCompleta = public_path($rutaDecodificada);
@@ -62,9 +62,25 @@ class DocumentoController extends Controller
             return null;
         }
         
-        // Codificar la ruta en base64 para evitar problemas con caracteres especiales
-        $rutaCodificada = base64_encode($ruta);
+        // Codificar la ruta en base64 URL-safe para evitar problemas con caracteres especiales
+        $rutaCodificada = self::base64UrlEncode($ruta);
         
         return route('documento.ver', ['path' => $rutaCodificada]);
+    }
+
+    /**
+     * Codifica una cadena en base64 URL-safe
+     */
+    private static function base64UrlEncode($data)
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+
+    /**
+     * Decodifica una cadena base64 URL-safe
+     */
+    private static function base64UrlDecode($data)
+    {
+        return base64_decode(strtr($data, '-_', '+/'));
     }
 }
