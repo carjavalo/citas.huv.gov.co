@@ -48,19 +48,41 @@ class DocumentoController extends Controller
      */
     private function servirDocumento($rutaRelativa)
     {
+        // Decodificar caracteres URL-encoded que puedan quedar (%20, %C3%93, etc.)
+        $rutaRelativa = urldecode($rutaRelativa);
+        
         // Construir la ruta completa
         $rutaCompleta = public_path($rutaRelativa);
         
         // Verificar que el archivo existe
         if (!file_exists($rutaCompleta)) {
-            abort(404, 'Documento no encontrado');
+            // Intentar buscar el archivo en el directorio por coincidencia parcial
+            $directorio = dirname($rutaCompleta);
+            $nombreArchivo = basename($rutaCompleta);
+            
+            if (is_dir($directorio)) {
+                // Buscar archivos en el directorio y comparar nombres normalizados
+                $archivos = scandir($directorio);
+                foreach ($archivos as $archivo) {
+                    // Comparar el nombre normalizado (sin encoding) 
+                    if ($this->normalizarNombre($archivo) === $this->normalizarNombre($nombreArchivo)) {
+                        $rutaCompleta = $directorio . DIRECTORY_SEPARATOR . $archivo;
+                        break;
+                    }
+                }
+            }
+            
+            // Si aún no existe, retornar 404
+            if (!file_exists($rutaCompleta)) {
+                abort(404, 'Documento no encontrado');
+            }
         }
         
         // Verificar que la ruta está dentro de Documentos (seguridad)
         $rutaNormalizada = realpath($rutaCompleta);
         $directorioBase = realpath(public_path('Documentos'));
         
-        if ($rutaNormalizada === false || strpos($rutaNormalizada, $directorioBase) !== 0) {
+        if ($rutaNormalizada === false || $directorioBase === false || strpos($rutaNormalizada, $directorioBase) !== 0) {
             abort(403, 'Acceso no autorizado');
         }
         
@@ -73,8 +95,21 @@ class DocumentoController extends Controller
         // Retornar el archivo con headers apropiados
         return response()->file($rutaCompleta, [
             'Content-Type' => $mimeType,
-            'Content-Disposition' => 'inline; filename="' . $nombreArchivo . '"'
+            'Content-Disposition' => 'inline; filename="' . rawurlencode($nombreArchivo) . '"'
         ]);
+    }
+
+    /**
+     * Normaliza un nombre de archivo para comparación
+     * Convierte a minúsculas y normaliza caracteres Unicode
+     */
+    private function normalizarNombre($nombre)
+    {
+        // Normalizar a forma NFC de Unicode si la extensión intl está disponible
+        if (function_exists('normalizer_normalize')) {
+            $nombre = \Normalizer::normalize($nombre, \Normalizer::FORM_C);
+        }
+        return mb_strtolower($nombre, 'UTF-8');
     }
 
     /**

@@ -16,7 +16,8 @@
 
     # Forzar que las solicitudes a /Documentos/* pasen por Laravel
     # para manejar espacios y caracteres especiales en nombres de archivos
-    RewriteRule ^Documentos/(.*)$ index.php [L]
+    # Flag B: no decodificar la URL antes de pasarla a index.php
+    RewriteRule ^Documentos/(.*)$ index.php [L,QSA]
 
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
