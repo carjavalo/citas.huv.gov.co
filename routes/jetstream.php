@@ -23,7 +23,10 @@ Route::group(['middleware' => config('jetstream.middleware', ['web'])], function
     Route::group(['middleware' => [$authMiddleware, 'verified']], function () {
         // User & Profile...
         Route::get('/usuario/perfil', [UserProfileController::class, 'show'])
-                    ->name('profile.show');
+            ->name('usuario.perfil');
+        // Compatibilidad Jetstream y menús
+        Route::get('/user/profile', [UserProfileController::class, 'show'])
+            ->name('profile.show');
 
         // API...
         if (Jetstream::hasApiFeatures()) {

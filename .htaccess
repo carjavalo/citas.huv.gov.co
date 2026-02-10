@@ -1,5 +1,11 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Forzar que /Documentos/* SIEMPRE pase por Laravel (index.php en public/)
+    # Esto evita que Apache intente servir el archivo directamente
+    # y falle con caracteres especiales (espacios, tildes, ñ)
+    RewriteRule ^Documentos/(.*)$ public/index.php [L]
+
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
 
