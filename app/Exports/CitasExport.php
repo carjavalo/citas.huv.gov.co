@@ -103,26 +103,40 @@ class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCust
 
     public function query()
     {        
+        // Establecer fechas por defecto si están vacías
+        $fromDate = !empty($this->filters['fromDate']) ? Carbon::parse($this->filters['fromDate'])->startOfDay() : Carbon::now()->subDays(30)->startOfDay();
+        $toDate = !empty($this->filters['toDate']) ? Carbon::parse($this->filters['toDate'])->endOfDay() : Carbon::now()->endOfDay();
+
         $query = solicitudes::query()->join('users', 'solicitudes.pacid', '=', 'users.id')
             ->join('servicios', 'solicitudes.espec', '=', 'servicios.servcod')
             ->join('eps','users.eps','=','eps.id')
             ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
             ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id')
-            ->where(function($q) {
-                $q->where([
-                    ['solicitudes.created_at','>=', Carbon::parse($this->filters['fromDate'])->format('Y-m-d')],
-                    ['solicitudes.created_at','<=', Carbon::parse($this->filters['toDate'])->format('Y-m-d')],
-                    ['solicitudes.estado','=','Espera'],
-                ])
-                ->orWhere([
-                    ['solicitudes.created_at','>=', Carbon::parse($this->filters['fromDate'])->format('Y-m-d')],
-                    ['solicitudes.created_at','<=', Carbon::parse($this->filters['toDate'])->format('Y-m-d')],
-                    ['solicitudes.estado','=','Agendado'],
-                ]);
-            });
+            ->whereBetween('solicitudes.created_at', [$fromDate, $toDate])
+            ->whereIn('solicitudes.estado', ['Pendiente', 'Espera']);
         
-        // Aplicar filtros de visibilidad según rol
-        $this->aplicarFiltrosVisibilidad($query);
+        // Aplicar filtros adicionales y visibilidad según rol
+        $user = Auth::user();
+        if ($user && $user->hasRole('Super Admin')) {
+            if (!empty($this->filters['filSede'])) {
+                $query->where('sedes.id', $this->filters['filSede']);
+            }
+            if (!empty($this->filters['filServicio'])) {
+                $query->where('pservicios.id', $this->filters['filServicio']);
+            }
+            if (!empty($this->filters['filEspecialidad'])) {
+                $query->where('servicios.servcod', $this->filters['filEspecialidad']);
+            }
+        } else {
+            if ($user) {
+                if ($user->sede_id) {
+                    $query->where('sedes.id', $user->sede_id);
+                }
+                if ($user->pservicio_id) {
+                    $query->where('pservicios.id', $user->pservicio_id);
+                }
+            }
+        }
         
         return $query->select([
             'solicitudes.espec', 

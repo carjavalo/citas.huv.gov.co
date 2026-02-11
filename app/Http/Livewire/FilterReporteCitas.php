@@ -20,6 +20,7 @@ class FilterReporteCitas extends Component
 {
     //public $reporteCitas;
     use WithPagination;
+    protected $paginationTheme = 'tailwind';
 
     public $filters=[
         //'estado'=>'',
@@ -33,10 +34,27 @@ class FilterReporteCitas extends Component
     public $filEspecialidad = '';
 
     public function generateReport(){
-        return Excel::download(new CitasExport($this->filters), 'Reporte_Citas.xlsx'); 
-   
+        $exportFilters = array_merge($this->filters, [
+            'filSede' => $this->filSede,
+            'filServicio' => $this->filServicio,
+            'filEspecialidad' => $this->filEspecialidad,
+        ]);
 
-        
+        return Excel::download(new CitasExport($exportFilters), 'Reporte_Citas.xlsx'); 
+    }
+
+    // Listener para cambios en los filtros
+    public function updatedFilters()
+    {
+        $this->resetPage();
+    }
+
+    // Resetear paginación cuando cualquiera de los filtros cambie (incluidos filtros anidados)
+    public function updated($name, $value)
+    {
+        if (str_starts_with($name, 'filters') || in_array($name, ['filSede', 'filServicio', 'filEspecialidad'])) {
+            $this->resetPage();
+        }
     }
 //----------------------------------------------------------------------------------------------------------------
    /* public function render()
@@ -72,23 +90,17 @@ class FilterReporteCitas extends Component
  
 public function render()
     {
+            // Establecer fechas por defecto si están vacías
+            $fromDate = !empty($this->filters['fromDate']) ? Carbon::parse($this->filters['fromDate'])->startOfDay() : Carbon::now()->subDays(30)->startOfDay();
+            $toDate = !empty($this->filters['toDate']) ? Carbon::parse($this->filters['toDate'])->endOfDay() : Carbon::now()->endOfDay();
+
             $query = solicitudes::query()->join('users', 'solicitudes.pacid', '=', 'users.id')
                 ->join('servicios', 'solicitudes.espec', '=', 'servicios.servcod')
                 ->join('eps','users.eps','=','eps.id')
                 ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
                 ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id')
-                ->where(function($q) {
-                    $q->where([
-                        ['solicitudes.created_at','>=', Carbon::parse($this->filters['fromDate'])->format('Y-m-d')],
-                        ['solicitudes.created_at','<=', Carbon::parse($this->filters['toDate'])->format('Y-m-d')],
-                        ['solicitudes.estado','=','Espera'],
-                    ])
-                    ->orWhere([
-                        ['solicitudes.created_at','>=', Carbon::parse($this->filters['fromDate'])->format('Y-m-d')],
-                        ['solicitudes.created_at','<=', Carbon::parse($this->filters['toDate'])->format('Y-m-d')],
-                        ['solicitudes.estado','=','Agendado'],
-                    ]);
-                });
+                ->whereBetween('solicitudes.created_at', [$fromDate, $toDate])
+                ->whereIn('solicitudes.estado', ['Pendiente', 'Espera']);
 
             // Restricción de visibilidad según rol del usuario
             // Super Admin ve todo. Administrador, Coordinador y Consultor filtran por sede y pservicio.
