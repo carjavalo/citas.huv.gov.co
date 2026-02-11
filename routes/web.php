@@ -1,12 +1,3 @@
-use Laravel\Jetstream\Http\Controllers\Livewire\UserProfileController;
-Route::middleware(['auth'])->group(function () {
-    Route::get('/user/profile', [UserProfileController::class, 'show'])->name('profile.show');
-});
-use App\Http\Controllers\ProfileController;
-Route::middleware(['auth'])->group(function () {
-    Route::get('/profile', [ProfileController::class, 'show'])
-        ->name('profile.show');
-});
 <?php
 use App\Models\Pservicio;
 use App\Models\solicitudes;
