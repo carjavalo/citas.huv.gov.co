@@ -85,15 +85,15 @@
             <?php
 if (! isset($_instance)) {
     $html = \Livewire\Livewire::mount('navigation-menu')->html();
-} elseif ($_instance->childHasBeenRendered('tMKg2qu')) {
-    $componentId = $_instance->getRenderedChildComponentId('tMKg2qu');
-    $componentTag = $_instance->getRenderedChildComponentTagName('tMKg2qu');
+} elseif ($_instance->childHasBeenRendered('KvGjLfF')) {
+    $componentId = $_instance->getRenderedChildComponentId('KvGjLfF');
+    $componentTag = $_instance->getRenderedChildComponentTagName('KvGjLfF');
     $html = \Livewire\Livewire::dummyMount($componentId, $componentTag);
-    $_instance->preserveRenderedChild('tMKg2qu');
+    $_instance->preserveRenderedChild('KvGjLfF');
 } else {
     $response = \Livewire\Livewire::mount('navigation-menu');
     $html = $response->html();
-    $_instance->logRenderedChild('tMKg2qu', $response->id(), \Livewire\Livewire::getRootElementTagName($html));
+    $_instance->logRenderedChild('KvGjLfF', $response->id(), \Livewire\Livewire::getRootElementTagName($html));
 }
 echo $html;
 ?>
@@ -117,7 +117,6 @@ echo $html;
        
         <?php echo $__env->yieldPushContent('modals'); ?>
 
-        <?php $__env->startSection('js'); ?>
     <?php echo \Livewire\Livewire::scripts(); ?>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>

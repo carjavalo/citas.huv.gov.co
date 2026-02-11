@@ -16,12 +16,12 @@
             <div class="flex flex-wrap gap-4 mb-4">
                 <div>
                     Filtrar desde:
-                    <input wire:model="filters.fromDate" type="date" class="w-36 border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"/>
+                    <input wire:model.lazy="filters.fromDate" type="date" class="w-36 border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"/>
                     
                 </div>
                 <div> 
                     Filtrar hasta:
-                    <input wire:model="filters.toDate" type="date" class="w-36 border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"/>
+                    <input wire:model.lazy="filters.toDate" type="date" class="w-36 border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"/>
                 </div>
 
                 @role('Super Admin')
