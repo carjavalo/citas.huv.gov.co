@@ -30,8 +30,8 @@ class ConsultaGeneral extends Component
     public $filestado, $filserv, $filpaciente, $fileps, $filsede = ''; //Filtros de búsqueda
     public $selectedSolicitudes = []; // Para selección múltiple de solicitudes
     public $selectAll = false; // Para seleccionar todos
-    public $sortField = 'solicitudes.created_at'; // Campo de ordenamiento
-    public $sortDirection = 'asc'; // Dirección de ordenamiento
+    public $sortField = 'solicitudes.id'; // Campo de ordenamiento por defecto
+    public $sortDirection = 'desc'; // Dirección de ordenamiento por defecto
     public $fecha, $hora, $reserva, $correo, $solicitud, $usu_nomb, $ndocumento, $tipo_documento, $contacto, $pacid, $solnum, $archivos, $observacion, $codigo_autorizacion;
     public $ubicacion = "Calle. 5 # 36 - 08, Barrio San Fernando Cali, Valle del Cauca";
     public $hoy;
