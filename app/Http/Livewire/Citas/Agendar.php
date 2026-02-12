@@ -49,7 +49,7 @@ class Agendar extends Component
                 $this->historia->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,'historia.'.$extension, 'upload');
                 $this->autorizacion->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,'autorizacion.'.$extension, 'upload');    
                 $this->ordenMedica->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,'orden_medica.'.$extension, 'upload');
-                solicitudes::create([
+                $sol = solicitudes::create([
                     'pacid'     => $this->pacid,
                     'espec'     => $this->espec,
                     'estado'    => 'Pendiente',
@@ -57,8 +57,14 @@ class Agendar extends Component
                     'pacordmed' => 'Documentos/usuario'.Auth::user()->id.''.'/solicitud_'.$numero.'/orden_medica.'.$extension,
                     'pacauto'   => 'Documentos/usuario'.Auth::user()->id.''.'/solicitud_'.$numero.'/autorizacion.'.$extension,
                 ]);
-                
-            $this->reset(['espec','autorizacion','ordenMedica','historia']);
-            $this->emit('alertSuccess','Solicitud enviada satisfactoriamente'); //Evento para emitir alerta
+
+                \Log::info('Solicitud creada (agendar)', ['pacid' => $this->pacid, 'solnum' => $numero, 'id' => $sol->id ?? null]);
+                if (empty($sol->id)) {
+                    \Log::error('Solicitud creada sin id asignado (agendar)', ['pacid' => $this->pacid, 'solnum' => $numero]);
+                    $this->emit('alertError','Solicitud creada pero el identificador no fue asignado. Informe al administrador.');
+                } else {
+                    $this->reset(['espec','autorizacion','ordenMedica','historia']);
+                    $this->emit('alertSuccess','Solicitud enviada satisfactoriamente'); //Evento para emitir alerta
+                }
     }
 }

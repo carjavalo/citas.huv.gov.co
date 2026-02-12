@@ -132,7 +132,7 @@ class Solicitar extends Component
             }else{
                 $this->soporte_patologia->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,$this->soporte_patologia->getClientOriginalName(), 'upload');    
             }
-                solicitudes::create([
+                $sol = solicitudes::create([
                     'pacid'                 => $this->pacid,
                     'espec'                 => $this->espec,
                     'estado'                => 'Pendiente',
@@ -145,8 +145,14 @@ class Solicitar extends Component
                     'pacobs'                => $this->observacion,
                     'soporte_patologia'     => $this->soporte_patologia== null ? null:'Documentos/usuario'.Auth::user()->id.''.'/solicitud_'.$numero.'/'.$this->soporte_patologia->getClientOriginalName(),
                 ]);
-                
-            $this->emit('alertSuccessCita','Solicitud enviada satisfactoriamente'); //Evento para emitir alerta
+                // Registrar en logs el id devuelto por la creación
+                \Log::info('Solicitud creada', ['pacid' => $this->pacid, 'solnum' => $numero, 'id' => $sol->id ?? null]);
+                if (empty($sol->id)) {
+                    \Log::error('Solicitud creada sin id asignado', ['pacid' => $this->pacid, 'solnum' => $numero]);
+                    $this->emit('alertError','Solicitud creada pero el identificador no fue asignado. Informe al administrador.');
+                } else {
+                    $this->emit('alertSuccessCita','Solicitud enviada satisfactoriamente'); //Evento para emitir alerta
+                }
         } catch (\Throwable $th) {
             $this->emit('alertError','Ocurrió un error'.$th); //Evento para emitir alerta
         }

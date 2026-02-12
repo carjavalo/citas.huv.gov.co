@@ -9,6 +9,14 @@ class solicitudes extends Model
 {
     use HasFactory;
 
+    /**
+     * Asegurar explícitamente la configuración de la clave primaria
+     * para evitar ambientes con comportamiento distinto.
+     */
+    protected $primaryKey = 'id';
+    public $incrementing = true;
+    protected $keyType = 'int';
+
     protected $fillable = [
         'pacid',
         'espec',
