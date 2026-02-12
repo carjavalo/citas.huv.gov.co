@@ -1,30 +1,17 @@
 <div>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-blue-800 leading-tight">
-            {{ __('Solicitudes') }}
-        </h2>
-    </x-slot>
     @if ($modal)
-    <div>
         @include('livewire.citas.cita-agendada')
-    </div>
     @endif
     @if ($detalles)
-    <div>
         @livewire('citas.detalle-cita', ['solicitud_id' => $sol_id])
-    </div>
     @endif
 
     @if($rechazar)
-    <div>
         @livewire('citas.rechazar-cita', ['solicitud_id' => $sol_id])
-    </div>
     @endif
 
     @if($notificar_espera)
-    <div>
         @livewire('citas.notificar-espera', ['solicitud_id' => $sol_id])
-    </div>
     @endif
     <div wire:poll.visible.30s>
         <div class="py-12">
