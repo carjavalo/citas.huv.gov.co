@@ -1,4 +1,9 @@
 <div>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-blue-800 leading-tight">
+            {{ __('Solicitudes') }}
+        </h2>
+    </x-slot>
     @if ($modal)
         @include('livewire.citas.cita-agendada')
     @endif
@@ -276,13 +281,13 @@
             </div>
         </div>
     </div>
-</div>
-<script>
-    //Para emular click del usurio
-    function cargarespecialidades(){
 
-        setTimeout(function(){
-            document.getElementById("test111").click();
-}, 1000);
-           }
+    <script>
+        //Para emular click del usuario
+        function cargarespecialidades(){
+            setTimeout(function(){
+                document.getElementById("test111").click();
+            }, 1000);
+        }
     </script>
+</div>
