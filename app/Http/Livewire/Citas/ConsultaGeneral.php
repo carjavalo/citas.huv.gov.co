@@ -168,9 +168,13 @@ class ConsultaGeneral extends Component
         $this->resetPage();
     }
 
-    public function agendar($solicitud_id)
+    public function agendar($solicitud_id = null)
     {
         $this->authorize('citas.consulta.agendar');
+        if (empty($solicitud_id)) {
+            $this->emit('alertError', 'No se pudo identificar la solicitud. Por favor, recargue la página e intente nuevamente.');
+            return;
+        }
         try {
             $this->solicitud = $solicitud_id;
             $datos = User::join('solicitudes','users.id','=','solicitudes.pacid')->
@@ -295,8 +299,12 @@ class ConsultaGeneral extends Component
         }
     }
 
-    public function cancelarCita($id)
+    public function cancelarCita($id = null)
     {
+        if (empty($id)) {
+            $this->emit('alertError', 'No se pudo identificar la solicitud. Por favor, recargue la página e intente nuevamente.');
+            return;
+        }
         try {
             $solicitud = solicitudes::join('users', 'solicitudes.pacid', '=', 'users.id')
                 ->join('servicios', 'solicitudes.espec', '=', 'servicios.servcod')
@@ -318,8 +326,12 @@ class ConsultaGeneral extends Component
         }
     }
 
-    public function detalles($sol_id)
+    public function detalles($sol_id = null)
     {
+        if (empty($sol_id)) {
+            $this->emit('alertError', 'No se pudo identificar la solicitud. Por favor, recargue la página e intente nuevamente.');
+            return;
+        }
         $this->sol_id = $sol_id;
         $this->detalles = true;
     }
@@ -329,8 +341,12 @@ class ConsultaGeneral extends Component
         $this->detalles = false;
     }
 
-    public function rechazar($sol_id)
+    public function rechazar($sol_id = null)
     {
+        if (empty($sol_id)) {
+            $this->emit('alertError', 'No se pudo identificar la solicitud. Por favor, recargue la página e intente nuevamente.');
+            return;
+        }
         $this->sol_id = $sol_id;
         $this->rechazar = true;
     }
@@ -340,8 +356,12 @@ class ConsultaGeneral extends Component
         $this->rechazar = false;
     }
 
-    public function cambiarEstado($sol_id) //Función para mitigar error cuando se refresca la ventana con una solicitud en agendamiento
+    public function cambiarEstado($sol_id = null) //Función para mitigar error cuando se refresca la ventana con una solicitud en agendamiento
     {
+        if (empty($sol_id)) {
+            $this->emit('alertError', 'No se pudo identificar la solicitud. Por favor, recargue la página e intente nuevamente.');
+            return;
+        }
         $solicitud = solicitudes::where('id', $sol_id)->first();
         $estado_anterior = $solicitud->estado_anterior; //Toma el estado anterior para regresarlo
         solicitudes::where('id', $sol_id)->update([
@@ -351,8 +371,12 @@ class ConsultaGeneral extends Component
         ]);
     }
 
-    public function notificarEspera($sol_id)
+    public function notificarEspera($sol_id = null)
     {
+        if (empty($sol_id)) {
+            $this->emit('alertError', 'No se pudo identificar la solicitud. Por favor, recargue la página e intente nuevamente.');
+            return;
+        }
         $this->sol_id = $sol_id;
         $this->notificar_espera = true;
     }
@@ -362,8 +386,12 @@ class ConsultaGeneral extends Component
         $this->notificar_espera = false;
     }
 
-    public function reagendarCita($sol_id) //SOLUCIÓN RÁPIDA PARA CAMBIAR EL ESTADO DE UNA CITA EN ESTADO "ESPERA" A "PENDIENTE"
+    public function reagendarCita($sol_id = null) //SOLUCIÓN RÁPIDA PARA CAMBIAR EL ESTADO DE UNA CITA EN ESTADO "ESPERA" A "PENDIENTE"
     {
+        if (empty($sol_id)) {
+            $this->emit('alertError', 'No se pudo identificar la solicitud. Por favor, recargue la página e intente nuevamente.');
+            return;
+        }
         try {
             $solicitud = solicitudes::join('users', 'solicitudes.pacid', '=', 'users.id')
                 ->join('servicios', 'solicitudes.espec', '=', 'servicios.servcod')
@@ -385,8 +413,12 @@ class ConsultaGeneral extends Component
     }
 
     // Eliminar una solicitud individual (Solo Super Admin)
-    public function eliminarSolicitud($id)
+    public function eliminarSolicitud($id = null)
     {
+        if (empty($id)) {
+            $this->emit('alertError', 'No se pudo identificar la solicitud. Por favor, recargue la página e intente nuevamente.');
+            return;
+        }
         if (!Auth::user()->hasRole('Super Admin')) {
             $this->emit('alertError', 'No tiene permisos para eliminar solicitudes.');
             return;

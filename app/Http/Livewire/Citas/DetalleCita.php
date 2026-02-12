@@ -12,8 +12,12 @@ class DetalleCita extends Component
     public $sol_id;
     public $datos, $agente; //Variable que almacena los datos de la solicitud agendada
 
-    public function mount($solicitud_id)
+    public function mount($solicitud_id = null)
     {
+        if (empty($solicitud_id)) {
+            $this->emit('alertError', 'No se pudo identificar la solicitud.');
+            return;
+        }
         try {
             $this->sol_id = $solicitud_id;
             $this->datos = solicitudes::join('users', 'solicitudes.pacid','=','users.id')->
