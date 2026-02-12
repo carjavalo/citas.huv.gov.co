@@ -14,12 +14,13 @@ class FixSolicitudesAutoIncrementId extends Migration
      */
     public function up()
     {
-        // Obtener el máximo ID actual de la tabla
+        // Paso 1: Asegurar que la columna id tenga el atributo AUTO_INCREMENT
+        // Esto NO borra datos, solo modifica la definición de la columna
+        DB::statement('ALTER TABLE solicitudes MODIFY id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT');
+
+        // Paso 2: Ajustar el contador AUTO_INCREMENT al siguiente valor después del máximo ID
         $maxId = DB::table('solicitudes')->max('id') ?? 0;
         $nextId = $maxId + 1;
-        
-        // Restaurar el AUTO_INCREMENT al siguiente valor después del máximo ID
-        // Esto no borra datos, solo configura la secuencia
         DB::statement("ALTER TABLE solicitudes AUTO_INCREMENT = {$nextId}");
     }
 
