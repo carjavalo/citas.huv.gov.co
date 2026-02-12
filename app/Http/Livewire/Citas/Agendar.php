@@ -42,7 +42,9 @@ class Agendar extends Component
                 'ordenMedica'   => 'required',
                 'historia'      => 'required',
             ]);
-                $numero = count(Storage::disk('upload')->directories('Documentos/usuario'.Auth::user()->id))+1;
+                // Obtener el siguiente número de solicitud basado en el último solnum del usuario en la BD
+                $ultimoSolnum = solicitudes::where('pacid', Auth::user()->id)->max('solnum');
+                $numero = ($ultimoSolnum ?? 0) + 1;
                 $extension = $this->historia->getClientOriginalExtension();
                 $this->historia->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,'historia.'.$extension, 'upload');
                 $this->autorizacion->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,'autorizacion.'.$extension, 'upload');    

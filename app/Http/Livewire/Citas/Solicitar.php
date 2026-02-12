@@ -116,7 +116,9 @@ class Solicitar extends Component
         }
         
         try {
-            $numero = count(Storage::disk('upload')->directories('Documentos/usuario'.Auth::user()->id))+1;//Cuenta el número de solicitudes que ha hecho el usuario
+            // Obtener el siguiente número de solicitud basado en el último solnum del usuario en la BD
+            $ultimoSolnum = solicitudes::where('pacid', Auth::user()->id)->max('solnum');
+            $numero = ($ultimoSolnum ?? 0) + 1;
             $this->historia->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,$this->historia->getClientOriginalName(), 'upload');
             $this->ordenMedica->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,$this->ordenMedica->getClientOriginalName(), 'upload');
             $this->pacdocid->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,$this->pacdocid->getClientOriginalName(), 'upload');
