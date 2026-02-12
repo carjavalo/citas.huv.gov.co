@@ -173,8 +173,12 @@
                                         </div>
 
                                         <div class="px-4 py-3 text-center sm:px-6">
-                                            <button wire:click.prevent="agendar()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none">
-                                                Enviar
+                                            <button wire:click.prevent="agendar()" wire:loading.attr="disabled" wire:loading.class="opacity-50 cursor-not-allowed" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed" {{ $procesando ? 'disabled' : '' }}>
+                                                <span wire:loading.remove wire:target="agendar">Enviar</span>
+                                                <span wire:loading wire:target="agendar" class="inline-flex items-center">
+                                                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                                    Procesando...
+                                                </span>
                                             </button>
                                         </div>
                                     </div>

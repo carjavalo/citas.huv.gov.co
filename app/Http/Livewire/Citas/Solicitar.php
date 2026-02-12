@@ -18,6 +18,7 @@ class Solicitar extends Component
     public $selectsede = null, $pservicios = null;
     public $nombres, $apellido1, $apellido2, $pacid, $correo, $eps;
     public $espec,$pespec, $estado, $historia, $autorizacion, $ordenMedica, $pacdocid, $observacion, $num_soli, $codigo_autorizacion, $soporte_patologia;
+    public $procesando = false; // Bandera para evitar doble envío
 
     use WithFileUploads;
 
@@ -85,6 +86,12 @@ class Solicitar extends Component
     
     public function agendar()
     {
+        // Evitar doble envío: si ya está procesando, no ejecutar de nuevo
+        if ($this->procesando) {
+            return;
+        }
+        $this->procesando = true;
+
         if($this->espec == 1 || $this->espec == 491 || $this->espec == 4){
 
             $this->validate([
@@ -155,6 +162,8 @@ class Solicitar extends Component
                 }
         } catch (\Throwable $th) {
             $this->emit('alertError','Ocurrió un error'.$th); //Evento para emitir alerta
+        } finally {
+            $this->procesando = false; // Liberar la bandera siempre
         }
     }
 }
