@@ -3907,3 +3907,4 @@ Ensure that the [name, id, data] of the Livewire component wasn't tampered with 
 #17 C:\\xampp\\htdocs\\citas\\diagnostico_solicitudes.php(64): Illuminate\\Database\\Eloquent\\Model::__callStatic('create', Array)
 #18 {main}
 "} 
+[2026-02-13 13:51:41] local.INFO: Solicitud creada {"pacid":58316,"solnum":7,"id":139479} 

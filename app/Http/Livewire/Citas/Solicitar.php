@@ -92,6 +92,18 @@ class Solicitar extends Component
         }
         $this->procesando = true;
 
+        // Validación extra: evitar duplicados por usuario, especialidad y estado pendiente en el mismo día
+        $existe = solicitudes::where('pacid', $this->pacid)
+            ->where('espec', $this->espec)
+            ->where('estado', 'Pendiente')
+            ->whereDate('created_at', now()->toDateString())
+            ->exists();
+        if ($existe) {
+            $this->emit('alertError', 'Ya existe una solicitud pendiente para esta especialidad hoy.');
+            $this->procesando = false;
+            return;
+        }
+
         if($this->espec == 1 || $this->espec == 491 || $this->espec == 4){
 
             $this->validate([
