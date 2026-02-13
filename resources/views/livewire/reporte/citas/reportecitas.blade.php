@@ -1,7 +1,7 @@
 <x-app-layout>
 <x-slot name="header">
         <h2 class="font-semibold text-xl text-blue-600 leading-tight">
-           Citas Pendientes y en Espera 
+           Reporte de Todas las Solicitudes 
         </h2>
     </x-slot>        
 

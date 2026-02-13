@@ -103,17 +103,23 @@ class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCust
 
     public function query()
     {        
-        // Establecer fechas por defecto si están vacías
-        $fromDate = !empty($this->filters['fromDate']) ? Carbon::parse($this->filters['fromDate'])->startOfDay() : Carbon::now()->subDays(30)->startOfDay();
-        $toDate = !empty($this->filters['toDate']) ? Carbon::parse($this->filters['toDate'])->endOfDay() : Carbon::now()->endOfDay();
-
         $query = solicitudes::query()->join('users', 'solicitudes.pacid', '=', 'users.id')
             ->join('servicios', 'solicitudes.espec', '=', 'servicios.servcod')
             ->join('eps','users.eps','=','eps.id')
             ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
-            ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id')
-            ->whereBetween('solicitudes.created_at', [$fromDate, $toDate])
-            ->whereIn('solicitudes.estado', ['Pendiente', 'Espera']);
+            ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id');
+
+        // Filtrar por fechas solo si el usuario selecciona un rango
+        if (!empty($this->filters['fromDate']) && !empty($this->filters['toDate'])) {
+            $fromDate = Carbon::parse($this->filters['fromDate'])->startOfDay();
+            $toDate = Carbon::parse($this->filters['toDate'])->endOfDay();
+            $query->whereBetween('solicitudes.created_at', [$fromDate, $toDate]);
+        }
+
+        // Filtrar por estado solo si se selecciona uno específico
+        if (!empty($this->filters['estado'])) {
+            $query->where('solicitudes.estado', $this->filters['estado']);
+        }
         
         // Aplicar filtros adicionales y visibilidad según rol
         $user = Auth::user();

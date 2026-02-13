@@ -27,39 +27,49 @@
                     <input wire:model.lazy="filters.toDate" type="date" class="w-36 border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"/>
                 </div>
 
-                @role('Super Admin')
+                <?php if(\Spatie\Permission\PermissionServiceProvider::bladeMethodWrapper('hasRole', 'Super Admin')): ?>
                 <div>
                     Sede:
                     <select wire:model="filSede" class="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
                         <option value="">Todas las sedes</option>
-                        @foreach($sedes as $sede)
-                            <option value="{{ $sede->id }}">{{ $sede->nombre }}</option>
-                        @endforeach
+                        <?php $__currentLoopData = $sedes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sede): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($sede->id); ?>"><?php echo e($sede->nombre); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
                 <div>
                     Servicio:
                     <select wire:model="filServicio" class="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
                         <option value="">Todos los servicios</option>
-                        @foreach($pservicios as $pservicio)
-                            <option value="{{ $pservicio->id }}">{{ $pservicio->descripcion }}</option>
-                        @endforeach
+                        <?php $__currentLoopData = $pservicios; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pservicio): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($pservicio->id); ?>"><?php echo e($pservicio->descripcion); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
                 <div>
                     Especialidad:
                     <select wire:model="filEspecialidad" class="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
                         <option value="">Todas las especialidades</option>
-                        @foreach($especialidades as $especialidad)
-                            <option value="{{ $especialidad->servcod }}">{{ $especialidad->servnomb }}</option>
-                        @endforeach
+                        <?php $__currentLoopData = $especialidades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $especialidad): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($especialidad->servcod); ?>"><?php echo e($especialidad->servnomb); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
-                @endrole
+                <?php endif; ?>
             </div>
-              <x-jet-button wire:click="generateReport">
+              <?php if (isset($component)) { $__componentOriginalc254754b9d5db91d5165876f9d051922ca0066f4 = $component; } ?>
+<?php $component = $__env->getContainer()->make(Illuminate\View\AnonymousComponent::class, ['view' => 'jetstream::components.button','data' => ['wire:click' => 'generateReport']]); ?>
+<?php $component->withName('jet-button'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php $component->withAttributes(['wire:click' => 'generateReport']); ?>
                 Generar Reporte
-              </x-jet-button>
+               <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalc254754b9d5db91d5165876f9d051922ca0066f4)): ?>
+<?php $component = $__componentOriginalc254754b9d5db91d5165876f9d051922ca0066f4; ?>
+<?php unset($__componentOriginalc254754b9d5db91d5165876f9d051922ca0066f4); ?>
+<?php endif; ?>
         </div>
 
       
@@ -104,48 +114,60 @@
                         </tr>
                     </thead>
                <tbody>
-                    @foreach($solicitudes as $solicitude)
+                    <?php $__currentLoopData = $solicitudes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $solicitude): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                             <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                      {{$solicitude->espec}}
+                                      <?php echo e($solicitude->espec); ?>
+
                             </th>
                             <td class="px-6 py-4">
-                                   {{$solicitude->servicio_nombre}}
+                                   <?php echo e($solicitude->servicio_nombre); ?>
+
                             </td>
                             <td class="px-6 py-4">
-                                     {{$solicitude->estado}}
+                                     <?php echo e($solicitude->estado); ?>
+
                             </td>
                             <td class="px-6 py-4">
-                                      {{$solicitude->created_at->format('d/m/y')}}
+                                      <?php echo e($solicitude->created_at->format('d/m/y')); ?>
+
                             </td>
                             <td class="px-6 py-4">
-                                {{$solicitude->updated_at->format('d/m/y')}}
+                                <?php echo e($solicitude->updated_at->format('d/m/y')); ?>
+
                             </td>
                             <td class="px-6 py-4">
-                                      {{$solicitude->paciente_nombre}}
+                                      <?php echo e($solicitude->paciente_nombre); ?>
+
                             </td>
                             <td class="px-6 py-4">
-                                       {{$solicitude->paciente_apellido1}}
+                                       <?php echo e($solicitude->paciente_apellido1); ?>
+
                             </td>
                             <td class="px-6 py-4">
-                                       {{$solicitude->paciente_apellido2}}
+                                       <?php echo e($solicitude->paciente_apellido2); ?>
+
                             </td>
                             <td class="px-6 py-4">
-                                       {{$solicitude->paciente_ndocumento}}
+                                       <?php echo e($solicitude->paciente_ndocumento); ?>
+
                             </td>
                             <td class="px-6 py-4">
-                                        {{$solicitude->codigo_eps}}
+                                        <?php echo e($solicitude->codigo_eps); ?>
+
                             </td>
                             <td class="px-6 py-4">
-                                    {{$solicitude->eps}}
+                                    <?php echo e($solicitude->eps); ?>
+
                             </td>
                         </tr>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </tbody>
             </table>
         </div>
                 <div class="mt-4">
-                    {{$solicitudes->links()}}
+                    <?php echo e($solicitudes->links()); ?>
+
                 </div>
     </div>  
-   
+   <?php /**PATH C:\xampp\htdocs\citas\resources\views/livewire/filter-reporte-citas.blade.php ENDPATH**/ ?>
