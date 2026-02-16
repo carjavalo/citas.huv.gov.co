@@ -229,7 +229,7 @@ class ConsultaGeneral extends Component
             // Solo se hacen los joins necesarios y se seleccionan los campos requeridos
             $datos = solicitudes::where('solicitudes.id', $this->solicitud)
                 ->join('users', 'solicitudes.pacid', '=', 'users.id')
-                ->join('tipo_identificacions', 'users.tdocumento', '=', 'tipo_identificacions.id')
+                ->leftJoin('tipo_identificacions', 'users.tdocumento', '=', 'tipo_identificacions.id')
                 ->select([
                     'users.id',
                     'users.name as paciente_nombres',
@@ -237,7 +237,7 @@ class ConsultaGeneral extends Component
                     'users.email',
                     'users.telefono1 as paciente_telefono1',
                     'users.ndocumento as paciente_numero_documento',
-                    'tipo_identificacions.nombre as paciente_tipo_documento',
+                    \Illuminate\Support\Facades\DB::raw("COALESCE(tipo_identificacions.nombre, 'Sin tipo') as paciente_tipo_documento"),
                     'solicitudes.solnum',
                     'solicitudes.pacdocid',
                     'solicitudes.pacauto',

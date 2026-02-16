@@ -43,23 +43,31 @@ class solicitudes extends Model
     {
         static::created(function ($solicitud) {
             // Registrar actividad de nueva solicitud de cita
-            if ($solicitud->pacid && auth()->check()) {
-                $user = \App\Models\User::find($solicitud->pacid);
-                if ($user && !$user->hasRole('Super Admin')) {
-                    \App\Models\UserActivity::create([
-                        'user_id' => $solicitud->pacid,
-                        'tipo_actividad' => 'cita',
-                        'descripcion' => 'Solicitó una cita',
-                        'modulo' => 'citas',
-                        'accion' => 'crear',
-                        'datos_adicionales' => json_encode([
-                            'solicitud_id' => $solicitud->id,
-                            'servicio_id' => $solicitud->espec,
-                        ]),
-                        'ip_address' => request()->ip(),
-                        'user_agent' => request()->userAgent(),
-                    ]);
+            // Envuelto en try-catch para no afectar la creación de la solicitud
+            try {
+                if ($solicitud->pacid && auth()->check()) {
+                    $user = \App\Models\User::find($solicitud->pacid);
+                    if ($user && !$user->hasRole('Super Admin')) {
+                        \App\Models\UserActivity::create([
+                            'user_id' => $solicitud->pacid,
+                            'tipo_actividad' => 'cita',
+                            'descripcion' => 'Solicitó una cita',
+                            'modulo' => 'citas',
+                            'accion' => 'crear',
+                            'datos_adicionales' => json_encode([
+                                'solicitud_id' => $solicitud->id,
+                                'servicio_id' => $solicitud->espec,
+                            ]),
+                            'ip_address' => request()->ip(),
+                            'user_agent' => request()->userAgent(),
+                        ]);
+                    }
                 }
+            } catch (\Throwable $e) {
+                \Log::warning('No se pudo registrar actividad de solicitud', [
+                    'solicitud_id' => $solicitud->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         });
     }

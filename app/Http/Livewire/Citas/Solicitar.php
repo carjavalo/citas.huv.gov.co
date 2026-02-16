@@ -8,6 +8,7 @@ use App\Models\servicios;
 use App\Models\solicitudes;
 use App\Models\Sede;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -135,45 +136,81 @@ class Solicitar extends Component
         }
         
         try {
-            // Obtener el siguiente número de solicitud basado en el último solnum del usuario en la BD
-            $ultimoSolnum = solicitudes::where('pacid', Auth::user()->id)->max('solnum');
-            $numero = ($ultimoSolnum ?? 0) + 1;
-            $this->historia->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,$this->historia->getClientOriginalName(), 'upload');
-            $this->ordenMedica->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,$this->ordenMedica->getClientOriginalName(), 'upload');
-            $this->pacdocid->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,$this->pacdocid->getClientOriginalName(), 'upload');
-            if(!$this->autorizacion){//Si el paciente no adjuntó autorización la variable se inicializa con null
-                $this->autorizacion = null;
-            }else{
-                $this->autorizacion->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,$this->autorizacion->getClientOriginalName(), 'upload');    
+            // 1. Capturar nombres originales de archivos ANTES de cualquier operación
+            $nombreHistoria = $this->historia->getClientOriginalName();
+            $nombreOrdenMedica = $this->ordenMedica->getClientOriginalName();
+            $nombreDocId = $this->pacdocid->getClientOriginalName();
+            $nombreAutorizacion = $this->autorizacion ? $this->autorizacion->getClientOriginalName() : null;
+            $nombreSoportePatologia = $this->soporte_patologia ? $this->soporte_patologia->getClientOriginalName() : null;
+
+            // 2. Obtener el siguiente solnum con bloqueo para evitar duplicados
+            $numero = DB::transaction(function () {
+                $ultimoSolnum = solicitudes::where('pacid', Auth::user()->id)
+                    ->lockForUpdate()
+                    ->max('solnum');
+                return ($ultimoSolnum ?? 0) + 1;
+            });
+
+            // 3. Definir la ruta base de archivos
+            $rutaBase = 'Documentos/usuario' . Auth::user()->id . '/solicitud_' . $numero;
+
+            // 4. Almacenar archivos obligatorios
+            $this->historia->storeAs($rutaBase, $nombreHistoria, 'upload');
+            $this->ordenMedica->storeAs($rutaBase, $nombreOrdenMedica, 'upload');
+            $this->pacdocid->storeAs($rutaBase, $nombreDocId, 'upload');
+
+            // 5. Almacenar archivos opcionales
+            if ($this->autorizacion) {
+                $this->autorizacion->storeAs($rutaBase, $nombreAutorizacion, 'upload');
             }
-            if(!$this->soporte_patologia){//Si el paciente no adjuntó soporte la variable se inicializa con null
-                $this->soporte_patologia = null;
-            }else{
-                $this->soporte_patologia->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,$this->soporte_patologia->getClientOriginalName(), 'upload');    
+            if ($this->soporte_patologia) {
+                $this->soporte_patologia->storeAs($rutaBase, $nombreSoportePatologia, 'upload');
             }
-                $sol = solicitudes::create([
-                    'pacid'                 => $this->pacid,
-                    'espec'                 => $this->espec,
-                    'estado'                => 'Pendiente',
-                    'solnum'                => $numero,
-                    'pachis'                => 'Documentos/usuario'.Auth::user()->id.''.'/solicitud_'.$numero.'/'.$this->historia->getClientOriginalName(),
-                    'pacordmed'             => 'Documentos/usuario'.Auth::user()->id.''.'/solicitud_'.$numero.'/'.$this->ordenMedica->getClientOriginalName(),
-                    'pacauto'               => $this->autorizacion== null ? null:'Documentos/usuario'.Auth::user()->id.''.'/solicitud_'.$numero.'/'.$this->autorizacion->getClientOriginalName(),// Si la variable es null, se inserta valor null, sino, se inserta la ruta del archivo
-                    'codigo_autorizacion'   => $this->codigo_autorizacion,
-                    'pacdocid'              => 'Documentos/usuario'.Auth::user()->id.''.'/solicitud_'.$numero.'/'.$this->pacdocid->getClientOriginalName(),
-                    'pacobs'                => $this->observacion,
-                    'soporte_patologia'     => $this->soporte_patologia== null ? null:'Documentos/usuario'.Auth::user()->id.''.'/solicitud_'.$numero.'/'.$this->soporte_patologia->getClientOriginalName(),
+
+            // 6. Crear el registro en la base de datos
+            $sol = solicitudes::create([
+                'pacid'                 => $this->pacid,
+                'espec'                 => $this->espec,
+                'estado'                => 'Pendiente',
+                'solnum'                => $numero,
+                'pachis'                => $rutaBase . '/' . $nombreHistoria,
+                'pacordmed'             => $rutaBase . '/' . $nombreOrdenMedica,
+                'pacauto'               => $nombreAutorizacion ? $rutaBase . '/' . $nombreAutorizacion : null,
+                'codigo_autorizacion'   => $this->codigo_autorizacion,
+                'pacdocid'              => $rutaBase . '/' . $nombreDocId,
+                'pacobs'                => $this->observacion,
+                'soporte_patologia'     => $nombreSoportePatologia ? $rutaBase . '/' . $nombreSoportePatologia : null,
+            ]);
+
+            // 7. Verificar que el ID fue asignado correctamente
+            if (empty($sol->id)) {
+                \Log::error('Solicitud creada sin id asignado', [
+                    'pacid' => $this->pacid,
+                    'solnum' => $numero,
+                    'model' => $sol->toArray(),
                 ]);
-                // Registrar en logs el id devuelto por la creación
-                \Log::info('Solicitud creada', ['pacid' => $this->pacid, 'solnum' => $numero, 'id' => $sol->id ?? null]);
-                if (empty($sol->id)) {
-                    \Log::error('Solicitud creada sin id asignado', ['pacid' => $this->pacid, 'solnum' => $numero]);
-                    $this->emit('alertError','Solicitud creada pero el identificador no fue asignado. Informe al administrador.');
-                } else {
-                    $this->emit('alertSuccessCita','Solicitud enviada satisfactoriamente'); //Evento para emitir alerta
-                }
+                // Refrescar el modelo desde la base de datos
+                $sol->refresh();
+            }
+
+            \Log::info('Solicitud creada exitosamente', [
+                'pacid' => $this->pacid,
+                'solnum' => $numero,
+                'id' => $sol->id,
+            ]);
+
+            $this->emit('alertSuccessCita', 'Solicitud enviada satisfactoriamente. ID: ' . $sol->id);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e; // Re-lanzar excepciones de validación para que Livewire las maneje
         } catch (\Throwable $th) {
-            $this->emit('alertError','Ocurrió un error'.$th); //Evento para emitir alerta
+            \Log::error('Error al crear solicitud', [
+                'pacid' => $this->pacid,
+                'error' => $th->getMessage(),
+                'archivo' => $th->getFile(),
+                'linea' => $th->getLine(),
+            ]);
+            $this->emit('alertError', 'Ocurrió un error al crear la solicitud. Por favor intente nuevamente.');
         } finally {
             $this->procesando = false; // Liberar la bandera siempre
         }
