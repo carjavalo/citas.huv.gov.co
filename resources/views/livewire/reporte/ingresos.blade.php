@@ -1,10 +1,10 @@
-<div class="font-body bg-gray-100 min-h-screen">
+<div class="bg-gray-100 min-h-screen" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
     <!-- Breadcrumb -->
     <div class="bg-white border-b border-gray-200">
         <div class="max-w-full mx-auto px-6 py-4">
             <nav class="flex items-center gap-2 text-sm text-gray-600">
                 <a class="hover:text-[#2e3a75]" href="{{ route('dashboard') }}">Inicio</a>
-                <span class="material-symbols-outlined text-base">chevron_right</span>
+                <span>&rsaquo;</span>
                 <span class="font-medium" style="color: #2e3a75;">Reporte de Actividades</span>
             </nav>
         </div>
@@ -66,7 +66,7 @@
                 <button wire:click="aplicarFiltros" 
                         class="text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-md hover:opacity-90" 
                         style="background-color: #2e3a75;">
-                    <span class="material-symbols-outlined text-sm">filter_alt</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
                     <span>Filtrar</span>
                 </button>
 
@@ -74,7 +74,7 @@
                 <button wire:click="exportarExcel" 
                         class="text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-md hover:opacity-90" 
                         style="background-color: #059669;">
-                    <span class="material-symbols-outlined text-sm">download</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     <span>Exportar Excel</span>
                 </button>
 
@@ -175,27 +175,27 @@
                             <td class="px-4 py-3">
                                 @if($actividad->tipo_actividad === 'login')
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-                                        <span class="material-symbols-outlined text-xs mr-1">login</span>
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
                                         Ingreso
                                     </span>
                                 @elseif($actividad->tipo_actividad === 'logout')
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
-                                        <span class="material-symbols-outlined text-xs mr-1">logout</span>
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                                         Salida
                                     </span>
                                 @elseif($actividad->tipo_actividad === 'registro')
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
-                                        <span class="material-symbols-outlined text-xs mr-1">person_add</span>
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
                                         Registro
                                     </span>
                                 @elseif($actividad->tipo_actividad === 'cita')
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
-                                        <span class="material-symbols-outlined text-xs mr-1">event</span>
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                         Cita
                                     </span>
                                 @else
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
-                                        <span class="material-symbols-outlined text-xs mr-1">touch_app</span>
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
                                         Acción
                                     </span>
                                 @endif
@@ -228,14 +228,7 @@
         </div>
     </div>
 
-    <!-- Material Symbols Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    
     <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        
         input:focus, select:focus {
             outline: none;
             border-color: #2e3a75 !important;
