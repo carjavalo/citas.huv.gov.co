@@ -22,6 +22,7 @@ yarn-error.log
 /storage/framework/views/*
 /vendor/
 /node_modules/
+/storage/logs/laravel.log
 .env
 # Windows Zone.Identifier files
 *Zone.Identifier

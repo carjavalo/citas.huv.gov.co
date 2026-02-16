@@ -66,7 +66,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('reporte/solicitudes/general', Procesado::class)->name('reporte.solicitudes.procesado');  
     Route::get('obstetricia', GodsonRequestComponent::class)->name('obstetricia');
     Route::get('/reporte/especialidades', function() { return view('reporte.especialidades'); })->name('reporte.especialidades');
-    Route::get('/reporte/ingresos', \App\Http\Livewire\Reporte\Ingresos::class)->name('reporte.ingresos');
+    Route::get('/reporte/ingresos', \App\Http\Livewire\Reporte\Ingresos::class)->name('reporte.ingresos')->middleware('role:Super Admin');
 
     //rutas para gestionar servicios   
     Route::get('/reportecitas/export', [reportecitas::class, 'reportecitasExport'])->name('reporte.solicitudes.reportecitas');

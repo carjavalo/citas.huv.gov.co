@@ -149,10 +149,11 @@
                                    {{ __('Especialidades') }}
                                 </a>
 
+                                @role('Super Admin')
                                 <a href="{{ route('reporte.ingresos') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                    {{ __('Ingresos') }}
                                 </a>
-                                
+                                @endrole
                                
                             </form>
                         </x-slot>
