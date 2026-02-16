@@ -4725,3 +4725,4 @@ Ensure that the [name, id, data] of the Livewire component wasn't tampered with 
 #80 C:\\xampp\\htdocs\\citas\\server.php(21): require_once('C:\\\\xampp\\\\htdocs...')
 #81 {main}
 "} 
+[2026-02-16 11:03:22] local.INFO: Solicitud creada {"pacid":58316,"solnum":7,"id":139480} 

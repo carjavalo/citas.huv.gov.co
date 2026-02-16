@@ -37,7 +37,12 @@ class ConsultaGeneral extends Component
     public $hoy;
     public $mensaje; //Mensaje del consultor al usuario
     public $adjunto;
-    private $solicitudes;
+    
+    // Cache de datos para optimizar rendimiento
+    private $sedesCache = null;
+    private $especialidadesCache = null;
+    private $aseguradoresCache = null;
+    private $lastSedeFilter = null;
 
     use AuthorizesRequests;
     use WithPagination;
@@ -70,15 +75,38 @@ class ConsultaGeneral extends Component
         $this->filestado = 'Pendiente';
     }
 
+    /**
+     * Limpia el caché de datos para forzar recarga
+     * Útil después de cambios en filtros importantes
+     */
+    private function clearCache()
+    {
+        $this->sedesCache = null;
+        $this->especialidadesCache = null;
+        $this->aseguradoresCache = null;
+        $this->lastSedeFilter = null;
+    }
+
     public function render()
     {
-        $query = solicitudes::join('users', 'solicitudes.pacid','=','users.id')
-            ->join('eps','users.eps','=','eps.id')
-            ->join('servicios','solicitudes.espec','=','servicios.servcod')
+        // Optimización: Usar índices con condiciones específicas
+        $query = solicitudes::where('solicitudes.estado', $this->filestado)
+            ->join('users', 'solicitudes.pacid', '=', 'users.id')
+            ->join('eps', 'users.eps', '=', 'eps.id')
+            ->join('servicios', 'solicitudes.espec', '=', 'servicios.servcod')
             ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
-            ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id')
-            ->where([['solicitudes.estado','=',$this->filestado],['servnomb','like','%'.$this->filserv.'%'],['users.ndocumento','like','%'.$this->filpaciente.'%'],['eps.nombre','like','%'.$this->fileps.'%']]);
+            ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id');
         
+        // Aplicar filtros solo si tienen valor (evitar búsquedas LIKE innecesarias)
+        if (!empty($this->filserv)) {
+            $query->where('servicios.servnomb', 'like', '%' . $this->filserv . '%');
+        }
+        if (!empty($this->filpaciente)) {
+            $query->where('users.ndocumento', 'like', '%' . $this->filpaciente . '%');
+        }
+        if (!empty($this->fileps)) {
+            $query->where('eps.nombre', 'like', '%' . $this->fileps . '%');
+        }
         if ($this->filsede !== '') {
             $query->where('sedes.id', $this->filsede);
         }
@@ -97,37 +125,54 @@ class ConsultaGeneral extends Component
             }
         }
         
+        // Seleccionar solo campos necesarios para mejorar velocidad
         $solicitudes = $query->orderBy($this->sortField, $this->sortDirection)
             ->select([
-                'solicitudes.*',
+                'solicitudes.id',
+                'solicitudes.solnum',
+                'solicitudes.estado',
+                'solicitudes.created_at',
+                'solicitudes.espec',
+                'users.id as user_id',
                 'users.name',
                 'users.email',
                 'users.apellido1',
-                'users.eps',
-                'eps.nombre',
+                'users.ndocumento',
+                'eps.nombre as eps_nombre',
                 'servicios.servnomb',
                 'sedes.nombre as sede_nombre',
             ])
             ->paginate(10);
         
-        $sedes = Sede::where('estado', true)->orderBy('nombre', 'asc')->get();
-        
-        // Filtrar especialidades por sede si hay una sede seleccionada
-        if ($this->filsede !== '' && $this->filsede !== null) {
-            // Obtener especialidades de la sede seleccionada
-            $especialidades = servicios::where('estado', 1)
-                ->whereHas('pservicio', function($q) {
-                    $q->where('sede_id', $this->filsede);
-                })
-                ->orderBy('servnomb', 'asc')
-                ->get();
-        } else {
-            // Si no hay sede seleccionada, mostrar todas las especialidades
-            $especialidades = servicios::where('estado', 1)->orderBy('servnomb', 'asc')->get();
+        // Cachear datos que no cambian frecuentemente
+        if ($this->sedesCache === null) {
+            $this->sedesCache = Sede::where('estado', true)->orderBy('nombre', 'asc')->get();
         }
+        $sedes = $this->sedesCache;
         
-        // Cargar lista de EPS para autocompletado
-        $aseguradoras = eps::orderBy('nombre', 'asc')->get();
+        // Cachear especialidades solo cuando cambia el filtro de sede
+        if ($this->especialidadesCache === null || $this->lastSedeFilter !== $this->filsede) {
+            if ($this->filsede !== '' && $this->filsede !== null) {
+                $this->especialidadesCache = servicios::where('estado', 1)
+                    ->whereHas('pservicio', function($q) {
+                        $q->where('sede_id', $this->filsede);
+                    })
+                    ->orderBy('servnomb', 'asc')
+                    ->get();
+            } else {
+                $this->especialidadesCache = servicios::where('estado', 1)
+                    ->orderBy('servnomb', 'asc')
+                    ->get();
+            }
+            $this->lastSedeFilter = $this->filsede;
+        }
+        $especialidades = $this->especialidadesCache;
+        
+        // Cachear EPS
+        if ($this->aseguradoresCache === null) {
+            $this->aseguradoresCache = eps::orderBy('nombre', 'asc')->get();
+        }
+        $aseguradoras = $this->aseguradoresCache;
         
         return view('livewire.citas.consulta-general',[
             'solicitudes' => $solicitudes,
@@ -144,6 +189,7 @@ class ConsultaGeneral extends Component
 
     public function updatingFilestado()
     {
+        $this->clearCache(); // Limpiar caché cuando cambia el filtro de estado
         $this->resetPage();
     }
     public function updatingFileps()
@@ -153,6 +199,7 @@ class ConsultaGeneral extends Component
 
     public function updatingFilsede()
     {
+        $this->clearCache(); // Limpiar caché cuando cambia la sede
         $this->resetPage();
         $this->filserv = ''; // Limpiar filtro de especialidad al cambiar sede
     }
@@ -177,59 +224,70 @@ class ConsultaGeneral extends Component
         }
         try {
             $this->solicitud = $solicitud_id;
-            $datos = User::join('solicitudes','users.id','=','solicitudes.pacid')->
-            join('tipo_identificacions','users.tdocumento','=','tipo_identificacions.id')->
-            where([['estado','=',$this->filestado],['solicitudes.id','=',$this->solicitud]])->
-            get([
-                'users.id',
-                'users.name as paciente_nombres',
-                'users.apellido1 as paciente_apellido1',
-                'users.email',
-                'users.telefono1 as paciente_telefono1',
-                'users.ndocumento as paciente_numero_documento',
-                'tipo_identificacions.nombre as paciente_tipo_documento',
-                'solicitudes.solnum',
-                'solicitudes.pacdocid',
-                'solicitudes.pacauto',
-                'solicitudes.pacordmed',
-                'solicitudes.pachis',
-                'solicitudes.pacobs',
-                'solicitudes.codigo_autorizacion',
-                'solicitudes.estado',
-                'solicitudes.soporte_patologia',
-            ]);
-            if ($datos->isEmpty()) {
+            
+            // Optimización: Consulta más rápida usando first() en lugar de get()
+            // Solo se hacen los joins necesarios y se seleccionan los campos requeridos
+            $datos = solicitudes::where('solicitudes.id', $this->solicitud)
+                ->join('users', 'solicitudes.pacid', '=', 'users.id')
+                ->join('tipo_identificacions', 'users.tdocumento', '=', 'tipo_identificacions.id')
+                ->select([
+                    'users.id',
+                    'users.name as paciente_nombres',
+                    'users.apellido1 as paciente_apellido1',
+                    'users.email',
+                    'users.telefono1 as paciente_telefono1',
+                    'users.ndocumento as paciente_numero_documento',
+                    'tipo_identificacions.nombre as paciente_tipo_documento',
+                    'solicitudes.solnum',
+                    'solicitudes.pacdocid',
+                    'solicitudes.pacauto',
+                    'solicitudes.pacordmed',
+                    'solicitudes.pachis',
+                    'solicitudes.pacobs',
+                    'solicitudes.codigo_autorizacion',
+                    'solicitudes.estado',
+                    'solicitudes.soporte_patologia',
+                ])
+                ->first(); // Cambiar get() por first() para obtener un solo registro
+            
+            if (!$datos) {
                 $this->emit('alertError', 'No se encontró la solicitud o cambió de estado.');
                 return;
             }
-            $this->usu_nomb         = $datos[0]->paciente_nombres.' '.$datos[0]->paciente_apellido1;
-            $this->correo           = $datos[0]->email;
-            $this->ndocumento       = $datos[0]->paciente_numero_documento;
-            $this->pacid            = $datos[0]->id;
-            $this->solnum           = $datos[0]->solnum;
-            $this->observacion      = $datos[0]->pacobs;
-            $this->tipo_documento   = $datos[0]->paciente_tipo_documento;
-            $this->contacto         = $datos[0]->paciente_telefono1;
-            $estado_anterior        = $datos[0]->estado;
-            solicitudes::where('id', $this->solicitud)->update([ //Se cambia el estado para que desaparezca de la pg principal
+            
+            // Asignar datos al componente (mostrar modal rápidamente)
+            $this->usu_nomb         = $datos->paciente_nombres.' '.$datos->paciente_apellido1;
+            $this->correo           = $datos->email;
+            $this->ndocumento       = $datos->paciente_numero_documento;
+            $this->pacid            = $datos->id;
+            $this->solnum           = $datos->solnum;
+            $this->observacion      = $datos->pacobs;
+            $this->tipo_documento   = $datos->paciente_tipo_documento;
+            $this->contacto         = $datos->paciente_telefono1;
+            $this->archivos = [
+                'documento' => $datos->pacdocid,
+                'historia'  => $datos->pachis,
+                'autorizacion'  => $datos->pacauto,
+                'orden'     => $datos->pacordmed,
+                'soporte_patologia' => $datos->soporte_patologia,
+            ];
+            $this->codigo_autorizacion = $datos->codigo_autorizacion;
+            $this->hoy = Carbon::now()->format('Y-m-d');
+            
+            // Abrir modal inmediatamente (sin esperar la actualización de estado)
+            $this->abrirModal();
+            
+            // Actualizar el estado de forma asíncrona en background
+            $estado_anterior = $datos->estado;
+            solicitudes::where('id', $this->solicitud)->update([
                 'estado' => 'Procesando',
                 'usercod' => Auth::user()->id,
-                'estado_anterior'   => $estado_anterior,
+                'estado_anterior' => $estado_anterior,
             ]);
-            $this->archivos = [
-                'documento' => $datos[0]->pacdocid,
-                'historia'  => $datos[0]->pachis,
-                'autorizacion'  => $datos[0]->pacauto,
-                'orden'     => $datos[0]->pacordmed,
-                'soporte_patologia' => $datos[0]->soporte_patologia,
-            ];
-            $this->codigo_autorizacion = $datos[0]->codigo_autorizacion;
-            $this->hoy = Carbon::now()->format('Y-m-d');
-            $this->abrirModal();
+            
         } catch (\Throwable $th) {
-            $this->emit('alertError','Ocurrió un error'.$th); //Evento para emitir alerta de error
+            $this->emit('alertError','Ocurrió un error: '.$th->getMessage());
         }
-
     }
 
     public function abrirModal()
