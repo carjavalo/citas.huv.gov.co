@@ -24,3 +24,72 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# ==============================
+# Compresión GZip para reducir tamaño de transferencia
+# ==============================
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE application/font-woff
+    AddOutputFilterByType DEFLATE application/font-woff2
+</IfModule>
+
+# ==============================
+# Caché de recursos estáticos (JS, CSS, imágenes, fuentes)
+# ==============================
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    # CSS y JavaScript: 1 semana
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType text/javascript "access plus 1 week"
+
+    # Imágenes: 1 mes
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 month"
+
+    # Fuentes: 1 mes
+    ExpiresByType application/font-woff "access plus 1 month"
+    ExpiresByType application/font-woff2 "access plus 1 month"
+    ExpiresByType application/vnd.ms-fontobject "access plus 1 month"
+    ExpiresByType font/ttf "access plus 1 month"
+    ExpiresByType font/otf "access plus 1 month"
+    ExpiresByType font/woff "access plus 1 month"
+    ExpiresByType font/woff2 "access plus 1 month"
+</IfModule>
+
+# ==============================
+# Headers de caché para archivos estáticos
+# ==============================
+<IfModule mod_headers.c>
+    # CSS y JS con versionado (mix-manifest): caché agresivo
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+
+    # Imágenes y fuentes: caché de 1 mes
+    <FilesMatch "\.(jpg|jpeg|png|gif|svg|webp|ico|woff|woff2|ttf|otf|eot)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+
+    # HTML y respuestas dinámicas: no cachear
+    <FilesMatch "\.(php|html)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+</IfModule>

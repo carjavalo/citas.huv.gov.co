@@ -22,7 +22,7 @@ yarn-error.log
 /storage/framework/views/*
 /vendor/
 /node_modules/
-/storage/logs/laravel.log
+/storage/logs/laravel.logc
 .env
 # Windows Zone.Identifier files
 *Zone.Identifier
@@ -35,3 +35,9 @@ AUX
 
 # Large database exports
 database/data_export.json
+/vendor
+/node_modules
+/storage/*.key
+/storage/app/*
+/storage/framework/*
+/storage/logs/*

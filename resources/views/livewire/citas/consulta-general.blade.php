@@ -18,7 +18,7 @@
     @if($notificar_espera)
         @livewire('citas.notificar-espera', ['solicitud_id' => $sol_id])
     @endif
-    <div wire:poll.visible.30s>
+    <div wire:poll.visible.60s>
         <div class="py-12">
             <div class="max-w-8xl mx-auto sm:px-6 lg:px-12">
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
