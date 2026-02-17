@@ -42,29 +42,53 @@ class Agendar extends Component
                 'ordenMedica'   => 'required',
                 'historia'      => 'required',
             ]);
-                // Obtener el siguiente número de solicitud basado en el último solnum del usuario en la BD
-                $ultimoSolnum = solicitudes::where('pacid', Auth::user()->id)->max('solnum');
-                $numero = ($ultimoSolnum ?? 0) + 1;
-                $extension = $this->historia->getClientOriginalExtension();
-                $this->historia->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,'historia.'.$extension, 'upload');
-                $this->autorizacion->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,'autorizacion.'.$extension, 'upload');    
-                $this->ordenMedica->storeAs('Documentos/usuario'.Auth::user()->id.'/solicitud_'.$numero,'orden_medica.'.$extension, 'upload');
-                $sol = solicitudes::create([
-                    'pacid'     => $this->pacid,
-                    'espec'     => $this->espec,
-                    'estado'    => 'Pendiente',
-                    'pachis'    => 'Documentos/usuario'.Auth::user()->id.''.'/solicitud_'.$numero.'/historia.'.$extension,
-                    'pacordmed' => 'Documentos/usuario'.Auth::user()->id.''.'/solicitud_'.$numero.'/orden_medica.'.$extension,
-                    'pacauto'   => 'Documentos/usuario'.Auth::user()->id.''.'/solicitud_'.$numero.'/autorizacion.'.$extension,
-                ]);
 
-                \Log::info('Solicitud creada (agendar)', ['pacid' => $this->pacid, 'solnum' => $numero, 'id' => $sol->id ?? null]);
+            // SEGURIDAD: Siempre usar Auth::user()->id, nunca confiar en $this->pacid del frontend
+            $userId = Auth::user()->id;
+
+            try {
+                $extension = $this->historia->getClientOriginalExtension();
+
+                // Crear registro en BD con solnum atómico (todo dentro de la misma transacción)
+                $sol = \Illuminate\Support\Facades\DB::transaction(function () use ($userId, $extension) {
+                    $ultimoSolnum = solicitudes::where('pacid', $userId)
+                        ->lockForUpdate()
+                        ->max('solnum');
+                    $numero = ($ultimoSolnum ?? 0) + 1;
+
+                    $rutaBase = 'Documentos/usuario' . $userId . '/solicitud_' . $numero;
+
+                    return solicitudes::create([
+                        'pacid'     => $userId,
+                        'espec'     => $this->espec,
+                        'estado'    => 'Pendiente',
+                        'solnum'    => $numero,
+                        'pachis'    => $rutaBase . '/historia.' . $extension,
+                        'pacordmed' => $rutaBase . '/orden_medica.' . $extension,
+                        'pacauto'   => $rutaBase . '/autorizacion.' . $extension,
+                    ]);
+                });
+
+                // Almacenar archivos DESPUÉS de que el registro fue creado exitosamente
+                $rutaBase = 'Documentos/usuario' . $userId . '/solicitud_' . $sol->solnum;
+                $this->historia->storeAs($rutaBase, 'historia.' . $extension, 'upload');
+                $this->autorizacion->storeAs($rutaBase, 'autorizacion.' . $extension, 'upload');    
+                $this->ordenMedica->storeAs($rutaBase, 'orden_medica.' . $extension, 'upload');
+
+                \Log::info('Solicitud creada (agendar)', ['pacid' => $userId, 'solnum' => $sol->solnum, 'id' => $sol->id ?? null]);
                 if (empty($sol->id)) {
-                    \Log::error('Solicitud creada sin id asignado (agendar)', ['pacid' => $this->pacid, 'solnum' => $numero]);
+                    \Log::error('Solicitud creada sin id asignado (agendar)', ['pacid' => $userId, 'solnum' => $sol->solnum]);
                     $this->emit('alertError','Solicitud creada pero el identificador no fue asignado. Informe al administrador.');
                 } else {
                     $this->reset(['espec','autorizacion','ordenMedica','historia']);
                     $this->emit('alertSuccess','Solicitud enviada satisfactoriamente'); //Evento para emitir alerta
                 }
+            } catch (\Throwable $th) {
+                \Log::error('Error al crear solicitud (agendar)', [
+                    'pacid' => $userId,
+                    'error' => $th->getMessage(),
+                ]);
+                $this->emit('alertError', 'Ocurrió un error al crear la solicitud. Por favor intente nuevamente.');
+            }
     }
 }

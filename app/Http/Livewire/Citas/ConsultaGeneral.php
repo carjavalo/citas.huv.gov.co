@@ -231,7 +231,7 @@ class ConsultaGeneral extends Component
                 ->join('users', 'solicitudes.pacid', '=', 'users.id')
                 ->leftJoin('tipo_identificacions', 'users.tdocumento', '=', 'tipo_identificacions.id')
                 ->select([
-                    'users.id',
+                    'solicitudes.pacid as paciente_id',
                     'users.name as paciente_nombres',
                     'users.apellido1 as paciente_apellido1',
                     'users.email',
@@ -259,7 +259,7 @@ class ConsultaGeneral extends Component
             $this->usu_nomb         = $datos->paciente_nombres.' '.$datos->paciente_apellido1;
             $this->correo           = $datos->email;
             $this->ndocumento       = $datos->paciente_numero_documento;
-            $this->pacid            = $datos->id;
+            $this->pacid            = $datos->paciente_id;
             $this->solnum           = $datos->solnum;
             $this->observacion      = $datos->pacobs;
             $this->tipo_documento   = $datos->paciente_tipo_documento;

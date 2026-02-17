@@ -34,7 +34,7 @@
                                                 <label for="nombres" class="block text-sm font-semibold">Nombres</label>
                                                 <input wire:model="nombres" type="text" name="nombres" id="nombres" autocomplete="given-name" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" value="{{ Auth::user()->name }}" disabled>
                                             </div>
-                                            <input wire:model="pacid" type="hidden" id="pacid" name="pacid" value="{{ Auth::user()->id }}">
+                                            {{-- pacid se controla exclusivamente del lado del servidor por seguridad --}}
                                             <div class="col-span-6 sm:col-span-3 lg:col-span-2">
                                                 <label for="apellido1" class="block text-sm font-semibold">Primer apellido</label>
                                                 <input wire:model="apellido1" type="text" name="apellido1" id="apellido1" autocomplete="family-name" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" value="{{ Auth::user()->apellido1 }}" disabled>

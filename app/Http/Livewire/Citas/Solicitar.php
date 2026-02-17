@@ -93,8 +93,11 @@ class Solicitar extends Component
         }
         $this->procesando = true;
 
+        // SEGURIDAD: Siempre usar Auth::user()->id, nunca confiar en $this->pacid del frontend
+        $userId = Auth::user()->id;
+
         // Validación extra: evitar duplicados por usuario, especialidad y estado pendiente en el mismo día
-        $existe = solicitudes::where('pacid', $this->pacid)
+        $existe = solicitudes::where('pacid', $userId)
             ->where('espec', $this->espec)
             ->where('estado', 'Pendiente')
             ->whereDate('created_at', now()->toDateString())
@@ -143,16 +146,35 @@ class Solicitar extends Component
             $nombreAutorizacion = $this->autorizacion ? $this->autorizacion->getClientOriginalName() : null;
             $nombreSoportePatologia = $this->soporte_patologia ? $this->soporte_patologia->getClientOriginalName() : null;
 
-            // 2. Obtener el siguiente solnum con bloqueo para evitar duplicados
-            $numero = DB::transaction(function () {
-                $ultimoSolnum = solicitudes::where('pacid', Auth::user()->id)
+            // 2. Crear registro en BD con solnum atómico (TODO dentro de la misma transacción)
+            $sol = DB::transaction(function () use ($userId, $nombreHistoria, $nombreOrdenMedica, $nombreDocId, $nombreAutorizacion, $nombreSoportePatologia) {
+                // Obtener el siguiente solnum con bloqueo para evitar duplicados
+                $ultimoSolnum = solicitudes::where('pacid', $userId)
                     ->lockForUpdate()
                     ->max('solnum');
-                return ($ultimoSolnum ?? 0) + 1;
+                $numero = ($ultimoSolnum ?? 0) + 1;
+
+                // Definir la ruta base de archivos usando SIEMPRE el ID del usuario autenticado
+                $rutaBase = 'Documentos/usuario' . $userId . '/solicitud_' . $numero;
+
+                // Crear el registro en la base de datos DENTRO de la transacción
+                return solicitudes::create([
+                    'pacid'                 => $userId,
+                    'espec'                 => $this->espec,
+                    'estado'                => 'Pendiente',
+                    'solnum'                => $numero,
+                    'pachis'                => $rutaBase . '/' . $nombreHistoria,
+                    'pacordmed'             => $rutaBase . '/' . $nombreOrdenMedica,
+                    'pacauto'               => $nombreAutorizacion ? $rutaBase . '/' . $nombreAutorizacion : null,
+                    'codigo_autorizacion'   => $this->codigo_autorizacion,
+                    'pacdocid'              => $rutaBase . '/' . $nombreDocId,
+                    'pacobs'                => $this->observacion,
+                    'soporte_patologia'     => $nombreSoportePatologia ? $rutaBase . '/' . $nombreSoportePatologia : null,
+                ]);
             });
 
-            // 3. Definir la ruta base de archivos
-            $rutaBase = 'Documentos/usuario' . Auth::user()->id . '/solicitud_' . $numero;
+            // 3. Ahora que el registro está creado, almacenar archivos usando la ruta del registro
+            $rutaBase = 'Documentos/usuario' . $userId . '/solicitud_' . $sol->solnum;
 
             // 4. Almacenar archivos obligatorios
             $this->historia->storeAs($rutaBase, $nombreHistoria, 'upload');
@@ -167,35 +189,19 @@ class Solicitar extends Component
                 $this->soporte_patologia->storeAs($rutaBase, $nombreSoportePatologia, 'upload');
             }
 
-            // 6. Crear el registro en la base de datos
-            $sol = solicitudes::create([
-                'pacid'                 => $this->pacid,
-                'espec'                 => $this->espec,
-                'estado'                => 'Pendiente',
-                'solnum'                => $numero,
-                'pachis'                => $rutaBase . '/' . $nombreHistoria,
-                'pacordmed'             => $rutaBase . '/' . $nombreOrdenMedica,
-                'pacauto'               => $nombreAutorizacion ? $rutaBase . '/' . $nombreAutorizacion : null,
-                'codigo_autorizacion'   => $this->codigo_autorizacion,
-                'pacdocid'              => $rutaBase . '/' . $nombreDocId,
-                'pacobs'                => $this->observacion,
-                'soporte_patologia'     => $nombreSoportePatologia ? $rutaBase . '/' . $nombreSoportePatologia : null,
-            ]);
-
-            // 7. Verificar que el ID fue asignado correctamente
+            // 6. Verificar que el ID fue asignado correctamente
             if (empty($sol->id)) {
                 \Log::error('Solicitud creada sin id asignado', [
-                    'pacid' => $this->pacid,
-                    'solnum' => $numero,
+                    'pacid' => $userId,
+                    'solnum' => $sol->solnum,
                     'model' => $sol->toArray(),
                 ]);
-                // Refrescar el modelo desde la base de datos
                 $sol->refresh();
             }
 
             \Log::info('Solicitud creada exitosamente', [
-                'pacid' => $this->pacid,
-                'solnum' => $numero,
+                'pacid' => $userId,
+                'solnum' => $sol->solnum,
                 'id' => $sol->id,
             ]);
 
@@ -205,7 +211,7 @@ class Solicitar extends Component
             throw $e; // Re-lanzar excepciones de validación para que Livewire las maneje
         } catch (\Throwable $th) {
             \Log::error('Error al crear solicitud', [
-                'pacid' => $this->pacid,
+                'pacid' => $userId,
                 'error' => $th->getMessage(),
                 'archivo' => $th->getFile(),
                 'linea' => $th->getLine(),
