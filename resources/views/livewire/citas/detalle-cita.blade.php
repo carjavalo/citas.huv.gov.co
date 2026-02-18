@@ -47,14 +47,22 @@
                                     
                                     @case('Procesando')
                                     <dt class="text-sm font-medium text-gray-500">Agente procesando</dt>
-                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"> {{ $agente->name }} {{ $agente->apellido1 }} </dd>
+                                    @if($agente)
+                                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"> {{ $agente->name }} {{ $agente->apellido1 }} </dd>
+                                    @else
+                                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"> Sin registro </dd>
+                                    @endif
                                     <dt class="text-sm font-medium text-gray-500"></dt>
                                     <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"> {{ $datos->updated_at }} </dd>
                                         @break
 
                                     @case('Espera')
                                     <dt class="text-sm font-medium text-gray-500">Actualizado por</dt>
-                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"> {{ $agente->name }} {{ $agente->apellido1 }} </dd>
+                                    @if($agente)
+                                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"> {{ $agente->name }} {{ $agente->apellido1 }} </dd>
+                                    @else
+                                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"> Sin registro </dd>
+                                    @endif
                                     <dt class="text-sm font-medium text-gray-500">Fecha actualizacion</dt>
                                     <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"> {{ $datos->updated_at }} </dd>  
                                     <dt class="text-sm font-medium text-gray-500">Motivo de espera</dt>
@@ -63,7 +71,11 @@
 
                                     @case('Rechazada')
                                     <dt class="text-sm font-medium text-gray-500">Rechazado por</dt>
-                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"> {{ $agente->name }} {{ $agente->apellido1 }} </dd>
+                                    @if($agente)
+                                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"> {{ $agente->name }} {{ $agente->apellido1 }} </dd>
+                                    @else
+                                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"> Sin registro </dd>
+                                    @endif
                                     <dt class="text-sm font-medium text-gray-500">Fecha de rechazo</dt>
                                     <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"> {{ $datos->updated_at }} </dd>
                                     <dt class="text-sm font-medium text-gray-500">Motivo de rechazo</dt>
