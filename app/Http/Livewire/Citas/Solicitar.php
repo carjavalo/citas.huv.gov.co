@@ -140,41 +140,43 @@ class Solicitar extends Component
         
         try {
             // 1. Capturar nombres originales de archivos ANTES de cualquier operación
-            $nombreHistoria = $this->historia->getClientOriginalName();
-            $nombreOrdenMedica = $this->ordenMedica->getClientOriginalName();
-            $nombreDocId = $this->pacdocid->getClientOriginalName();
-            $nombreAutorizacion = $this->autorizacion ? $this->autorizacion->getClientOriginalName() : null;
-            $nombreSoportePatologia = $this->soporte_patologia ? $this->soporte_patologia->getClientOriginalName() : null;
+            //    Se agregan prefijos por tipo de documento para evitar sobreescritura
+            //    cuando el usuario sube archivos con el mismo nombre en campos diferentes
+            $nombreHistoria = 'HC_' . $this->historia->getClientOriginalName();
+            $nombreOrdenMedica = 'OM_' . $this->ordenMedica->getClientOriginalName();
+            $nombreDocId = 'DI_' . $this->pacdocid->getClientOriginalName();
+            $nombreAutorizacion = $this->autorizacion ? 'AU_' . $this->autorizacion->getClientOriginalName() : null;
+            $nombreSoportePatologia = $this->soporte_patologia ? 'SP_' . $this->soporte_patologia->getClientOriginalName() : null;
 
-            // 2. Crear registro en BD con solnum atómico (TODO dentro de la misma transacción)
-            $sol = DB::transaction(function () use ($userId, $nombreHistoria, $nombreOrdenMedica, $nombreDocId, $nombreAutorizacion, $nombreSoportePatologia) {
+            // 2. Crear registro en BD con solnum atómico
+            //    Paso 1: Insertar registro con rutas temporales
+            //    Paso 2: Después de obtener el ID autoincremental, actualizar las rutas reales
+            $sol = DB::transaction(function () use ($userId) {
                 // Obtener el siguiente solnum con bloqueo para evitar duplicados
                 $ultimoSolnum = solicitudes::where('pacid', $userId)
                     ->lockForUpdate()
                     ->max('solnum');
                 $numero = ($ultimoSolnum ?? 0) + 1;
 
-                // Definir la ruta base de archivos usando SIEMPRE el ID del usuario autenticado
-                $rutaBase = 'Documentos/usuario' . $userId . '/solicitud_' . $numero;
-
-                // Crear el registro en la base de datos DENTRO de la transacción
+                // Crear el registro con rutas temporales (se actualizan después con el ID real)
                 return solicitudes::create([
                     'pacid'                 => $userId,
                     'espec'                 => $this->espec,
                     'estado'                => 'Pendiente',
                     'solnum'                => $numero,
-                    'pachis'                => $rutaBase . '/' . $nombreHistoria,
-                    'pacordmed'             => $rutaBase . '/' . $nombreOrdenMedica,
-                    'pacauto'               => $nombreAutorizacion ? $rutaBase . '/' . $nombreAutorizacion : null,
+                    'pachis'                => 'pendiente',
+                    'pacordmed'             => 'pendiente',
+                    'pacauto'               => null,
                     'codigo_autorizacion'   => $this->codigo_autorizacion,
-                    'pacdocid'              => $rutaBase . '/' . $nombreDocId,
+                    'pacdocid'              => 'pendiente',
                     'pacobs'                => $this->observacion,
-                    'soporte_patologia'     => $nombreSoportePatologia ? $rutaBase . '/' . $nombreSoportePatologia : null,
+                    'soporte_patologia'     => null,
                 ]);
             });
 
-            // 3. Ahora que el registro está creado, almacenar archivos usando la ruta del registro
-            $rutaBase = 'Documentos/usuario' . $userId . '/solicitud_' . $sol->solnum;
+            // 3. Usar el ID autoincremental (único y nunca se repite) para la carpeta de archivos
+            //    Esto evita colisiones cuando una solicitud es eliminada y se crea otra
+            $rutaBase = 'Documentos/usuario' . $userId . '/solicitud_' . $sol->id;
 
             // 4. Almacenar archivos obligatorios
             $this->historia->storeAs($rutaBase, $nombreHistoria, 'upload');
@@ -189,23 +191,26 @@ class Solicitar extends Component
                 $this->soporte_patologia->storeAs($rutaBase, $nombreSoportePatologia, 'upload');
             }
 
-            // 6. Verificar que el ID fue asignado correctamente
-            if (empty($sol->id)) {
-                \Log::error('Solicitud creada sin id asignado', [
-                    'pacid' => $userId,
-                    'solnum' => $sol->solnum,
-                    'model' => $sol->toArray(),
-                ]);
-                $sol->refresh();
-            }
+            // 6. Actualizar el registro con las rutas definitivas de los archivos
+            $sol->update([
+                'pachis'            => $rutaBase . '/' . $nombreHistoria,
+                'pacordmed'         => $rutaBase . '/' . $nombreOrdenMedica,
+                'pacdocid'          => $rutaBase . '/' . $nombreDocId,
+                'pacauto'           => $nombreAutorizacion ? $rutaBase . '/' . $nombreAutorizacion : null,
+                'soporte_patologia' => $nombreSoportePatologia ? $rutaBase . '/' . $nombreSoportePatologia : null,
+            ]);
 
             \Log::info('Solicitud creada exitosamente', [
                 'pacid' => $userId,
                 'solnum' => $sol->solnum,
                 'id' => $sol->id,
+                'ruta' => $rutaBase,
             ]);
 
-            $this->emit('alertSuccessCita', 'Solicitud enviada satisfactoriamente. ID: ' . $sol->id);
+            $this->emit('alertSuccessCita', 'Solicitud #' . $sol->solnum . ' enviada satisfactoriamente.');
+
+            // 7. Limpiar el formulario para evitar reenvíos con datos viejos
+            $this->resetFormulario();
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e; // Re-lanzar excepciones de validación para que Livewire las maneje
@@ -220,5 +225,21 @@ class Solicitar extends Component
         } finally {
             $this->procesando = false; // Liberar la bandera siempre
         }
+    }
+
+    /**
+     * Limpiar el formulario después de crear una solicitud exitosa.
+     * Evita reenvíos accidentales con datos/archivos de la solicitud anterior.
+     */
+    private function resetFormulario()
+    {
+        $this->reset([
+            'selectsede', 'selectpespec', 'espec',
+            'historia', 'ordenMedica', 'pacdocid', 'autorizacion',
+            'soporte_patologia', 'observacion', 'codigo_autorizacion',
+            'codigo',
+        ]);
+        $this->servicios = null;
+        $this->pservicios = null;
     }
 }

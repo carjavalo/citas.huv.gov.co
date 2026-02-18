@@ -39,6 +39,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\LogUserActivity::class,
+            \App\Http\Middleware\CheckRoleMaintenance::class, // Validación de mantenimiento por roles
         ],
 
         'api' => [

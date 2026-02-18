@@ -79,6 +79,9 @@
                                 <a href="{{ route('configuracion.roles') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('Roles') }}
                                 </a>
+                                <a href="{{ route('configuracion.mantenimiento') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
+                                    {{ __('P_Downd') }}
+                                </a>
                                 @endrole
                             </x-slot>
                         </x-jet-dropdown>

@@ -9,65 +9,84 @@
     <style>
         body {
             font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: #f3f4f6;
+        }
+        .corp-bg {
+            background-color: #2e3a75;
+        }
+        .corp-text {
+            color: #2e3a75;
+        }
+        .corp-gradient {
+            background: linear-gradient(135deg, #2e3a75 0%, #3d4d8f 100%);
+        }
+        .btn-corp {
+            background: linear-gradient(135deg, #2e3a75 0%, #3d4d8f 100%);
+        }
+        .btn-corp:hover {
+            opacity: 0.9;
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div class="max-w-xl w-full bg-white rounded-xl shadow-lg overflow-hidden relative">
-        <!-- Banner superior decorativo -->
-        <div class="h-2 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700"></div>
+    <div class="max-w-xl w-full bg-white rounded-xl shadow-2xl overflow-hidden relative">
+        <!-- Banner superior con gradiente corporativo -->
+        <div class="h-3 corp-gradient"></div>
 
         <div class="p-8 sm:p-12 text-center">
             
-            <!-- Icono de Mantenimiento -->
-            <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-blue-50 mb-6">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <!-- Logo Corporativo -->
+            <div class="mb-8 flex justify-center">
+                <img src="{{ asset('img/logoinicio.gif') }}" alt="Logo Institucional" class="h-24 object-contain">
+            </div>
+            
+            <!-- Icono de Mantenimiento (opcional/decorativo) -->
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-50 mb-6">
+                <!-- Usando el color corporativo para el icono -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 corp-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
             </div>
             
-            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight sm:text-4xl mb-4">
-                Estamos en Mantenimiento
+            <h1 class="text-3xl font-extrabold corp-text tracking-tight sm:text-4xl mb-4">
+                Sitio en Mantenimiento Temporal
             </h1>
             
-            <p class="text-lg text-gray-600 mb-8 leading-relaxed">
-                Estamos realizando actualizaciones importantes en nuestra plataforma para brindarte un mejor servicio. 
-                <br class="hidden sm:inline">
-                Por favor, intenta ingresar nuevamente en unos momentos.
-            </p>
-            
-            <!-- Mensaje de aviso -->
-            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-8 text-left">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3 flex-1 md:flex md:justify-between">
-                        <p class="text-sm text-blue-700">
-                            Disculpa las molestias ocasionadas.
-                        </p>
-                    </div>
+            <div class="text-lg text-gray-600 mb-8 leading-relaxed">
+                <p class="mb-4">Ofrecemos disculpas por los inconvenientes causados.</p>
+                <div class="bg-blue-50 border-l-4 border-[#2e3a75] p-4 text-left rounded-r">
+                    <p class="text-gray-700 text-base italic">
+                        @if($exception->getMessage())
+                            "{{ $exception->getMessage() }}"
+                        @else
+                            "Estamos realizando mejoras en nuestra plataforma para brindarle un mejor servicio. Por favor, intente ingresar nuevamente más tarde."
+                        @endif
+                    </p>
                 </div>
             </div>
+            
+            <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+                <!-- Botón de recarga -->
+                <button onclick="window.location.reload()" 
+                    class="inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white btn-corp focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2e3a75] transition duration-150 ease-in-out w-full sm:w-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Volver a intentar
+                </button>
 
-            <!-- Botón de recarga -->
-            <button onclick="window.location.reload()" 
-                class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Volver a intentar
-            </button>
+                <a href="{{ url('/') }}" class="inline-flex justify-center items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2e3a75] transition duration-150 ease-in-out w-full sm:w-auto">
+                    Ir al Inicio
+                </a>
+            </div>
         </div>
         
-        <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-center text-sm text-gray-500">
-            &copy; {{ date('Y') }} Sistema de Citas
+        <!-- Pie de tarjeta -->
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 flex justify-center border-t border-gray-200">
+            <span class="text-xs text-gray-500 text-center">&copy; {{ date('Y') }} Hospital Universitario del Valle. Todos los derechos reservados.</span>
         </div>
     </div>
-
 </body>
 </html>

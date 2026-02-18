@@ -62,6 +62,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/configuracion/especialidades/consulta', ConsultarEspecialidades::class)->name('configuracion.especialidades');
     Route::get('/configuracion/campanas/consulta', ConsultarCampanas::class)->name('configuracion.campanas');
     Route::get('/configuracion/roles/consulta', ConsultarRoles::class)->name('configuracion.roles');
+    Route::get('/configuracion/mantenimiento',  \App\Http\Livewire\Configuracion\MaintenanceMode::class)->name('configuracion.mantenimiento')->middleware('role:Super Admin');
     Route::get('/operando/sql', OperandoConsulta::class)->name('operando.sql');
     Route::get('reporte/solicitudes/general', Procesado::class)->name('reporte.solicitudes.procesado');  
     Route::get('obstetricia', GodsonRequestComponent::class)->name('obstetricia');
@@ -113,5 +114,22 @@ Route::middleware(['auth:sanctum', 'verified'])->get('/', function () {
         return redirect()->to('obstetricia');
     return view('dashboard');
 })->name('dashboard');
+
+
+// Solución para error "MethodNotAllowedHttpException" en logout (GET en vez de POST)
+// Esto permite cerrar sesión simplemente visitando /logout o /cerrar sesión
+Route::get('/logout', function() {
+    Auth::logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/');
+})->name('logout.get');
+
+Route::get('/cerrar sesión', function() {
+    Auth::logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/');
+});
 
 require_once __DIR__ . '/jetstream.php';

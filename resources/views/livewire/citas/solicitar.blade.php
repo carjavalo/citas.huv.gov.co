@@ -93,7 +93,7 @@
                                             <div class="col-span-6 sm:col-span-3 lg:col-span-3">
                                                 <div class="mb-3 w-96">
                                                     <label for="historia" class="block text-sm font-semibold text-gray-700">Historia Clinica<span class="text-red-500">*</span></label>
-                                                    <input type="file" wire:model.defer="historia" class="
+                                                    <input type="file" wire:model="historia" class="
                                                     file:mr-4 file:py-2 file:px-4
                                                     file:rounded-full file:border-0
                                                     file:text-sm file:font-semibold
