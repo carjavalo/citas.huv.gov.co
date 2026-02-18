@@ -15,7 +15,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // Verifica integridad de solicitudes todos los días a las 2:00 AM
+        $schedule->command('solicitudes:verificar-integridad')->dailyAt('02:00');
     }
 
     /**

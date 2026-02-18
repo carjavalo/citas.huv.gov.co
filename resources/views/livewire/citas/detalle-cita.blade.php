@@ -23,6 +23,8 @@
                                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ $datos->numero_documento }}</dd>
                                 <dt class="text-sm font-medium text-gray-500">Correo</dt>
                                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ $datos->email }}</dd>
+                                 <dt class="text-sm font-medium text-gray-500">Consecutivo</dt>
+                                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ $datos->solnum }}</dd>
                             </div>
                             <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                                 <dt class="text-sm font-medium text-gray-500">Especialidad solicitada</dt>

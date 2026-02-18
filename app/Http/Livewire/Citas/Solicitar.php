@@ -200,6 +200,16 @@ class Solicitar extends Component
                 'soporte_patologia' => $nombreSoportePatologia ? $rutaBase . '/' . $nombreSoportePatologia : null,
             ]);
 
+                    // Verificación de integridad tras crear solicitud
+                    try {
+                        $output = shell_exec('php '.base_path('verificar_integridad_solicitudes.php'));
+                        if (strpos($output, 'Errores') !== false) {
+                            \Log::warning('Verificación de integridad detectó errores tras crear solicitud', ['output' => $output]);
+                        }
+                    } catch (\Throwable $e) {
+                        \Log::error('Error al ejecutar verificación de integridad', ['error' => $e->getMessage()]);
+                    }
+
             \Log::info('Solicitud creada exitosamente', [
                 'pacid' => $userId,
                 'solnum' => $sol->solnum,
