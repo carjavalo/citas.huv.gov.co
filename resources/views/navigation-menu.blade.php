@@ -5,8 +5,8 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="https://citas.huv.gov.co" class="bg-white rounded-full p-1 shadow-md flex items-center justify-center">
-                  <img src="https://citas.huv.gov.co/huv-icon.png" alt="huv-icon" style="width: 80px;">                   </a>
+                    <a href="https://citas2.huv.gov.co" class="bg-white rounded-full p-1 shadow-md flex items-center justify-center">
+                  <img src="https://citas2.huv.gov.co/huv-icon.png" alt="huv-icon" style="width: 80px;">                   </a>
                 </div>
 
                 <!-- Navigation Links -->
