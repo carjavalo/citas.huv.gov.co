@@ -39,6 +39,7 @@ foreach ($solicitudes as $sol) {
     $docId = glob(__DIR__ . "/public/{$rutaBase}/DI_*");
     $autorizacion = glob(__DIR__ . "/public/{$rutaBase}/AU_*");
     $soportePatologia = glob(__DIR__ . "/public/{$rutaBase}/SP_*");
+    $codigoAutorizacion = glob(__DIR__ . "/public/{$rutaBase}/CAU_*");
 
     $update = [];
     if ($historia && isset($historia[0])) $update['pachis'] = $rutaBase . '/' . basename($historia[0]);
@@ -47,6 +48,15 @@ foreach ($solicitudes as $sol) {
     if ($autorizacion && isset($autorizacion[0])) $update['pacauto'] = $rutaBase . '/' . basename($autorizacion[0]);
     if ($soportePatologia && isset($soportePatologia[0])) $update['soporte_patologia'] = $rutaBase . '/' . basename($soportePatologia[0]);
 
+    if ($codigoAutorizacion && isset($codigoAutorizacion[0])) {
+        // Si el código está en el nombre del archivo, extraerlo (ejemplo: CAU_123456.pdf)
+        $nombreArchivo = basename($codigoAutorizacion[0]);
+        if (preg_match('/CAU_(.+)\./', $nombreArchivo, $matches)) {
+            $update['codigo_autorizacion'] = $matches[1];
+        } else {
+            $update['codigo_autorizacion'] = $nombreArchivo;
+        }
+    }
     if (!empty($update)) {
         DB::table('solicitudes')->where('id', $solId)->update($update);
         echo "Solicitud #{$solId} actualizada.\n";
