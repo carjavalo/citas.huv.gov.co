@@ -8,6 +8,28 @@ use Throwable;
 class Handler extends ExceptionHandler
 {
     /**
+     * Render an exception into an HTTP response.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Throwable  $exception
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function render($request, Throwable $exception)
+    {
+        // Detectar error de conexión a la base de datos
+        if ($exception instanceof \Illuminate\Database\QueryException) {
+            $msg = $exception->getMessage();
+            if (
+                str_contains($msg, 'SQLSTATE[HY000] [2002]') ||
+                str_contains($msg, 'No se puede establecer una conexión') ||
+                str_contains($msg, 'Connection refused')
+            ) {
+                return response()->view('errors.db-connection', [], 500);
+            }
+        }
+        return parent::render($request, $exception);
+    }
+    /**
      * A list of the exception types that are not reported.
      *
      * @var array<int, class-string<Throwable>>
