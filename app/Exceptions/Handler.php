@@ -19,12 +19,21 @@ class Handler extends ExceptionHandler
         // Detectar error de conexión a la base de datos
         if ($exception instanceof \Illuminate\Database\QueryException) {
             $msg = $exception->getMessage();
-            if (
-                str_contains($msg, 'SQLSTATE[HY000] [2002]') ||
-                str_contains($msg, 'No se puede establecer una conexión') ||
-                str_contains($msg, 'Connection refused')
-            ) {
-                return response()->view('errors.db-connection', [], 500);
+            // Errores típicos de conexión a base de datos
+            $erroresConexion = [
+                'SQLSTATE[HY000] [2002]',
+                'No se puede establecer una conexión',
+                'Connection refused',
+                'SQLSTATE[HY000] [1044]',
+                'Acceso denegado para el usuario',
+                'Access denied for user',
+                'Unknown database',
+                'Base de datos desconocida',
+            ];
+            foreach ($erroresConexion as $error) {
+                if (str_contains($msg, $error)) {
+                    return response()->view('errors.db-connection', [], 500);
+                }
             }
         }
         return parent::render($request, $exception);
