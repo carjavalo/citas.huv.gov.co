@@ -273,8 +273,10 @@ class Consulta extends Component
                 return;
             }
 
-            $user->password = Hash::make($this->nueva_password);
-            $user->save();
+            // Actualización directa para garantizar que solo se modifica la contraseña
+            User::where('id', $this->usu_id)->update([
+                'password' => Hash::make($this->nueva_password),
+            ]);
 
             $this->nueva_password = null;
             $this->emit('alertSuccess', 'Contraseña actualizada con éxito.');
