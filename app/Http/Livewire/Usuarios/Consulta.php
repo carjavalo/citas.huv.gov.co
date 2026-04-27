@@ -10,6 +10,7 @@ use App\Models\Pservicio;
 use Livewire\Component;
 use Spatie\Permission\Models\Role;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Hash;
 use Livewire\WithPagination;
 
 class Consulta extends Component
@@ -30,6 +31,9 @@ class Consulta extends Component
     public $pservicios = [];
     public $usu_sede;
     public $usu_pservicio;
+
+    // Campo para que Super Admin pueda restablecer la contraseña del usuario
+    public $nueva_password;
 
     public function updatingIdentificacion()
     {
@@ -241,6 +245,41 @@ class Consulta extends Component
             $this->emit('alertSuccess','Usuario editado con éxito.');  
         } catch (\Throwable $th) {
             $this->emit('alertError','Error: '.$th.'');
+        }
+    }
+
+    /**
+     * Restablece la contraseña del usuario seleccionado.
+     * Solo accesible para usuarios con rol Super Admin.
+     */
+    public function actualizarPassword()
+    {
+        if (!auth()->user()->hasRole('Super Admin')) {
+            $this->emit('alertError', 'No tiene permisos para cambiar contraseñas.');
+            return;
+        }
+
+        $this->validate([
+            'nueva_password' => 'required|min:8',
+        ], [
+            'nueva_password.required' => 'Debe ingresar una nueva contraseña.',
+            'nueva_password.min'      => 'La contraseña debe tener al menos 8 caracteres.',
+        ]);
+
+        try {
+            $user = User::find($this->usu_id);
+            if (!$user) {
+                $this->emit('alertError', 'Usuario no encontrado.');
+                return;
+            }
+
+            $user->password = Hash::make($this->nueva_password);
+            $user->save();
+
+            $this->nueva_password = null;
+            $this->emit('alertSuccess', 'Contraseña actualizada con éxito.');
+        } catch (\Throwable $th) {
+            $this->emit('alertError', 'Error al actualizar contraseña: ' . $th->getMessage());
         }
     }
 

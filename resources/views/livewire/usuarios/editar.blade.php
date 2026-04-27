@@ -94,6 +94,26 @@
                             <label for="numero_doucumento" class="block text-sm font-medium text-gray-700">Número de documento</label>
                             <input wire:model="ndoc" type="text" id="numero_documento" autocomplete="off" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
                         </div>
+
+                        {{-- Sección exclusiva Super Admin: restablecer contraseña --}}
+                        @if(auth()->user()->hasRole('Super Admin'))
+                        <div class="col-span-6 border-t border-gray-200 pt-4 mt-2">
+                            <div class="bg-yellow-50 border border-yellow-300 rounded-md p-3">
+                                <label for="nueva_password" class="block text-sm font-semibold text-yellow-800">
+                                    🔐 Restablecer contraseña (Solo Super Admin)
+                                </label>
+                                <p class="text-xs text-yellow-700 mb-2">Ingrese una nueva contraseña para este usuario (mínimo 8 caracteres).</p>
+                                <div class="flex gap-2">
+                                    <input wire:model.defer="nueva_password" type="text" id="nueva_password" autocomplete="off" placeholder="Nueva contraseña" class="flex-1 focus:ring-yellow-500 focus:border-yellow-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                    <button wire:click.prevent="actualizarPassword()" type="button" class="bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded-md transition">
+                                        Cambiar contraseña
+                                    </button>
+                                </div>
+                                @error('nueva_password') <span class="mt-1 inline-block px-2 text-xs text-red-600">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+                        @endif
+
                         <div class="col-span-6 sm:col-span-3">
                             <div class="block col-span-6 sm:col-span-3 justify-center">
                                 <button wire:click.prevent="actualizar()" class="w-full justify-center transition ease-in-out delay-150 bg-green-600 hover:-translate-y-1 hover:scale-110 hover:bg-green-700 duration-300 inline-flex py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white">
