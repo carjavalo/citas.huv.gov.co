@@ -109,6 +109,36 @@
                                 @error('nueva_password') <span class="mt-1 inline-block px-2 text-xs text-red-600">{{ $message }}</span> @enderror
                             </div>
                         </div>
+
+                        <div class="col-span-6">
+                            <div class="bg-blue-50 border border-blue-300 rounded-md p-3">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-blue-800">
+                                            Autorizar verificación de correo
+                                        </label>
+                                        <p class="text-xs text-blue-700">
+                                            @if($correo_verificado)
+                                                El correo de este usuario ya se encuentra verificado.
+                                            @else
+                                                Use esta opción cuando el usuario no haya podido completar la verificación desde su bandeja de entrada.
+                                            @endif
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        @if($correo_verificado)
+                                            <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                                                Verificado
+                                            </span>
+                                        @else
+                                            <button wire:click.prevent="autorizarVerificacionCorreo()" type="button" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-md transition">
+                                                Autorizar verificación
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         @endif
 
                         <div class="col-span-6 sm:col-span-3">

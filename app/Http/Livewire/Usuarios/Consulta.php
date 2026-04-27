@@ -25,6 +25,7 @@ class Consulta extends Component
     public $apellidos1 = '';
     public $nombre= '';
     public $identificacion ='';
+    public $correo_verificado = false;
     
     // Propiedades para sede y pservicio (solo rol Consultor)
     public $sedes = [];
@@ -145,7 +146,7 @@ class Consulta extends Component
 
     public function editar($id) //Esta función inicializa variables para mostrar en la modal
     {
-        $usuario                        = User::where('id','=',$id)->first(['id','name','apellido1','apellido2','email','eps','tdocumento','ndocumento','sede_id','pservicio_id']);
+        $usuario                        = User::where('id','=',$id)->first(['id','name','apellido1','apellido2','email','eps','tdocumento','ndocumento','sede_id','pservicio_id','email_verified_at']);
         if (!$usuario) {
             $this->emit('alertError', 'No se encontró el usuario.');
             return;
@@ -161,6 +162,7 @@ class Consulta extends Component
         $this->tipos_identificacion     = tipo_identificacion::all();
         $this->tdoc                     = $usuario->tdocumento;
         $this->ndoc                     = $usuario->ndocumento;
+        $this->correo_verificado        = !is_null($usuario->email_verified_at);
         
         // Cargar sedes
         $this->sedes                    = Sede::where('estado', 1)->get();
@@ -291,6 +293,36 @@ class Consulta extends Component
             $this->emit('alertSuccess', 'Usuario eliminado con éxito.');
         } catch (\Throwable $th) {
             $this->emit('alertError', 'Error al eliminar usuario: ' . $th->getMessage());
+        }
+    }
+
+    public function autorizarVerificacionCorreo()
+    {
+        if (!auth()->user()->hasRole('Super Admin')) {
+            $this->emit('alertError', 'No tiene permisos para autorizar la verificación de correo.');
+            return;
+        }
+
+        try {
+            $user = User::find($this->usu_id);
+
+            if (!$user) {
+                $this->emit('alertError', 'Usuario no encontrado.');
+                return;
+            }
+
+            if ($user->hasVerifiedEmail()) {
+                $this->correo_verificado = true;
+                $this->emit('alertSuccess', 'El correo del usuario ya estaba verificado.');
+                return;
+            }
+
+            $user->markEmailAsVerified();
+            $this->correo_verificado = true;
+
+            $this->emit('alertSuccess', 'Correo verificado con éxito.');
+        } catch (\Throwable $th) {
+            $this->emit('alertError', 'Error al verificar el correo: ' . $th->getMessage());
         }
     }
 }
