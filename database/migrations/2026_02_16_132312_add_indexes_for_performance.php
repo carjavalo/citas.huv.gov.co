@@ -19,7 +19,7 @@ class AddIndexesForPerformance extends Migration
         if (Schema::hasTable('solicitudes')) {
             // Usar DB::statement para controlar longitud del índice y evitar "key too long"
             if (!$this->indexExists('solicitudes', 'idx_solicitudes_estado_pacid')) {
-                \DB::statement('ALTER TABLE `solicitudes` ADD INDEX `idx_solicitudes_estado_pacid` (`estado`(100), `pacid`)');
+                \DB::statement('ALTER TABLE `solicitudes` ADD INDEX `idx_solicitudes_estado_pacid` (`estado`(50))');
             }
         }
 
