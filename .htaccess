@@ -1,12 +1,17 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Forzar que /Documentos/* SIEMPRE pase por Laravel (index.php en public/)
-    # Esto evita que Apache intente servir el archivo directamente
-    # y falle con caracteres especiales (espacios, tildes, ñ)
-    RewriteRule ^Documentos/(.*)$ public/index.php [L]
+    # Evitar bucle: no reescribir si ya empieza por public/
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{REQUEST_URI} !^/public$
 
-    RewriteRule ^(.*)$ public/$1 [L]
+    # Forzar que /Documentos/* pase por Laravel
+    RewriteRule ^Documentos/(.*)$ public/index.php [L,QSA]
+
+    # Redirigir todo lo demás al front controller en public/
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{REQUEST_URI} !^/public$
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
 </IfModule>
 
 # Hide the contents of directories
