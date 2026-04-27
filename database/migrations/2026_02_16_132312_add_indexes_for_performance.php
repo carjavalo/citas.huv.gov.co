@@ -17,12 +17,10 @@ class AddIndexesForPerformance extends Migration
     {
         // Índices para la tabla solicitudes
         if (Schema::hasTable('solicitudes')) {
-            Schema::table('solicitudes', function (Blueprint $table) {
-                // Índice para búsquedas por estado y pacid
-                if (!Schema::hasColumn('solicitudes', 'estado') || !$this->indexExists('solicitudes', 'idx_solicitudes_estado_pacid')) {
-                    $table->index(['estado', 'pacid'], 'idx_solicitudes_estado_pacid');
-                }
-            });
+            // Usar DB::statement para controlar longitud del índice y evitar "key too long"
+            if (!$this->indexExists('solicitudes', 'idx_solicitudes_estado_pacid')) {
+                \DB::statement('ALTER TABLE `solicitudes` ADD INDEX `idx_solicitudes_estado_pacid` (`estado`(100), `pacid`)');
+            }
         }
 
         // Índices para la tabla users
