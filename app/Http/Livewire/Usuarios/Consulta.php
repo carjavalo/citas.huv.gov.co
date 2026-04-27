@@ -211,6 +211,14 @@ class Consulta extends Component
             'usu_rol'       => 'required'
         ]);
 
+        if (auth()->user()->hasRole('Super Admin') && filled($this->nueva_password)) {
+            $this->validate([
+                'nueva_password' => 'min:8',
+            ], [
+                'nueva_password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            ]);
+        }
+
         try {
                 // Validar permisos de asignación de roles
                 $rolesRestringidos = $this->getRolesRestringidos();
@@ -241,47 +249,17 @@ class Consulta extends Component
                     'sede_id'       => $sedeId,
                     'pservicio_id'  => $pservicioId,
                 ]);
+
+                if (auth()->user()->hasRole('Super Admin') && filled($this->nueva_password)) {
+                    User::where('id', $this->usu_id)->update([
+                        'password' => Hash::make($this->nueva_password),
+                    ]);
+                }
+
             $this->reset();
             $this->emit('alertSuccess','Usuario editado con éxito.');  
         } catch (\Throwable $th) {
             $this->emit('alertError','Error: '.$th.'');
-        }
-    }
-
-    /**
-     * Restablece la contraseña del usuario seleccionado.
-     * Solo accesible para usuarios con rol Super Admin.
-     */
-    public function actualizarPassword()
-    {
-        if (!auth()->user()->hasRole('Super Admin')) {
-            $this->emit('alertError', 'No tiene permisos para cambiar contraseñas.');
-            return;
-        }
-
-        $this->validate([
-            'nueva_password' => 'required|min:8',
-        ], [
-            'nueva_password.required' => 'Debe ingresar una nueva contraseña.',
-            'nueva_password.min'      => 'La contraseña debe tener al menos 8 caracteres.',
-        ]);
-
-        try {
-            $user = User::find($this->usu_id);
-            if (!$user) {
-                $this->emit('alertError', 'Usuario no encontrado.');
-                return;
-            }
-
-            // Actualización directa para garantizar que solo se modifica la contraseña
-            User::where('id', $this->usu_id)->update([
-                'password' => Hash::make($this->nueva_password),
-            ]);
-
-            $this->nueva_password = null;
-            $this->emit('alertSuccess', 'Contraseña actualizada con éxito.');
-        } catch (\Throwable $th) {
-            $this->emit('alertError', 'Error al actualizar contraseña: ' . $th->getMessage());
         }
     }
 
