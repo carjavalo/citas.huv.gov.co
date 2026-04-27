@@ -104,7 +104,7 @@
                                 </label>
                                 <p class="text-xs text-yellow-700 mb-2">Ingrese una nueva contraseña para este usuario (mínimo 8 caracteres).</p>
                                 <div class="flex gap-2">
-                                    <input wire:model.defer="nueva_password" type="text" id="nueva_password" autocomplete="off" placeholder="Nueva contraseña" class="flex-1 focus:ring-yellow-500 focus:border-yellow-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                    <input wire:model="nueva_password" type="password" id="nueva_password" autocomplete="new-password" placeholder="Nueva contraseña" class="flex-1 focus:ring-yellow-500 focus:border-yellow-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
                                     <button wire:click.prevent="actualizarPassword()" type="button" class="bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded-md transition">
                                         Cambiar contraseña
                                     </button>
