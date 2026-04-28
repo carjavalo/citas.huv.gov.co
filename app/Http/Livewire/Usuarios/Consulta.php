@@ -244,7 +244,7 @@ class Consulta extends Component
                     'name'          => $this->nombres,
                     'apellido1'     => $this->apellido1,
                     'apellido2'     => $this->apellido2,
-                    'email'         => $this->email,
+                    'email'         => strtolower(trim($this->email)),
                     'eps'           => $this->usu_eps,
                     'tdocumento'    => $this->tdoc,
                     'ndocumento'    => $this->ndoc,
@@ -311,13 +311,27 @@ class Consulta extends Component
                 return;
             }
 
+            $correoNormalizado = strtolower(trim($user->email));
+
             if ($user->hasVerifiedEmail()) {
+                if ($user->email !== $correoNormalizado) {
+                    User::where('id', $this->usu_id)->update([
+                        'email' => $correoNormalizado,
+                    ]);
+                    $this->email = $correoNormalizado;
+                }
+
                 $this->correo_verificado = true;
                 $this->emit('alertSuccess', 'El correo del usuario ya estaba verificado.');
                 return;
             }
 
-            $user->markEmailAsVerified();
+            User::where('id', $this->usu_id)->update([
+                'email' => $correoNormalizado,
+                'email_verified_at' => now(),
+            ]);
+
+            $this->email = $correoNormalizado;
             $this->correo_verificado = true;
 
             $this->emit('alertSuccess', 'Correo verificado con éxito.');

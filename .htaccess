@@ -1,6 +1,11 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Forzar HTTPS (evita 419 Page Expired por SESSION_SECURE_COOKIE=true)
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
     # Evitar bucle: no reescribir si ya empieza por public/
     RewriteCond %{REQUEST_URI} !^/public/
     RewriteCond %{REQUEST_URI} !^/public$
