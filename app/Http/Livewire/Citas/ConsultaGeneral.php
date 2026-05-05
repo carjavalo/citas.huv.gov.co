@@ -13,6 +13,7 @@ use App\Models\servicios;
 use App\Models\eps;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\WithFileUploads;
@@ -483,8 +484,20 @@ class ConsultaGeneral extends Component
         }
         
         try {
-            solicitudes::where('id', $id)->delete();
-            $this->emit('alertSuccess', 'Solicitud eliminada correctamente.');
+            $solicitud = solicitudes::find($id);
+            if (!$solicitud) {
+                $this->emit('alertError', 'No se encontró la solicitud.');
+                return;
+            }
+
+            // Eliminar carpeta de archivos físicos antes de borrar el registro
+            $carpeta = 'Documentos/usuario' . $solicitud->pacid . '/solicitud_' . $solicitud->id;
+            if (Storage::disk('upload')->exists($carpeta)) {
+                Storage::disk('upload')->deleteDirectory($carpeta);
+            }
+
+            $solicitud->delete();
+            $this->emit('alertSuccess', 'Solicitud y documentos eliminados correctamente.');
         } catch (\Throwable $th) {
             $this->emit('alertError', 'Error al eliminar: ' . $th->getMessage());
         }
@@ -504,11 +517,23 @@ class ConsultaGeneral extends Component
         }
         
         try {
-            $count = count($this->selectedSolicitudes);
+            $solicitudesAEliminar = solicitudes::whereIn('id', $this->selectedSolicitudes)
+                ->select('id', 'pacid')
+                ->get();
+
+            // Eliminar carpetas de archivos físicos de cada solicitud
+            foreach ($solicitudesAEliminar as $sol) {
+                $carpeta = 'Documentos/usuario' . $sol->pacid . '/solicitud_' . $sol->id;
+                if (Storage::disk('upload')->exists($carpeta)) {
+                    Storage::disk('upload')->deleteDirectory($carpeta);
+                }
+            }
+
+            $count = $solicitudesAEliminar->count();
             solicitudes::whereIn('id', $this->selectedSolicitudes)->delete();
             $this->selectedSolicitudes = [];
             $this->selectAll = false;
-            $this->emit('alertSuccess', $count . ' solicitud(es) eliminada(s) correctamente.');
+            $this->emit('alertSuccess', $count . ' solicitud(es) y sus documentos eliminados correctamente.');
         } catch (\Throwable $th) {
             $this->emit('alertError', 'Error al eliminar: ' . $th->getMessage());
         }
