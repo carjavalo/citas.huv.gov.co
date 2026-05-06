@@ -57,12 +57,12 @@
                         </div>
                         <div class="col-span-6 sm:col-span-1">
                             <label for="fileps" class="block text-sm text-center font-medium text-gray-700">Filtrar por eps</label>
-                            <input type="text" wire:model="fileps" id="fileps" list="eps-list" autocomplete="off" placeholder="Nombre de la EPS" class="mt-1 focus:ring-blue-500 focus:blue-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                            <datalist id="eps-list">
+                            <select wire:model="fileps" id="fileps" autocomplete="off" class="mt-1 focus:ring-blue-500 focus:blue-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                <option value="">Todas las EPS</option>
                                 @foreach($aseguradoras as $aseguradora)
-                                    <option value="{{ $aseguradora->nombre }}">
+                                    <option value="{{ $aseguradora->id }}">{{ $aseguradora->nombre }}</option>
                                 @endforeach
-                            </datalist>
+                            </select>
                         </div>
                         <div class="col-span-6 sm:col-span-1">
                             <label for="filsede" class="block text-sm text-center font-medium text-gray-700">Filtrar por sede</label>

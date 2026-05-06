@@ -106,7 +106,7 @@ class ConsultaGeneral extends Component
             $query->where('users.ndocumento', 'like', '%' . $this->filpaciente . '%');
         }
         if (!empty($this->fileps)) {
-            $query->where('eps.nombre', 'like', '%' . $this->fileps . '%');
+            $query->where('eps.id', $this->fileps);
         }
         if ($this->filsede !== '') {
             $query->where('sedes.id', $this->filsede);
