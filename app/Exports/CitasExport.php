@@ -15,7 +15,7 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 
 use Maatwebsite\Excel\Excel;
-class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCustomStartCell
+class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCustomStartCell, WithMapping
 {
     use Exportable;
     private $filters;
@@ -52,6 +52,7 @@ class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCust
             'COD. ESPECIALIDAD',
             'SERVICIO',
             'ESTADO',
+            'MOTIVO RECHAZO',
             'FECHA SOLICITUD',
             'FECHA TRAMITE',
             'NOMBRE PACIENTE',
@@ -69,14 +70,15 @@ class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCust
             'A' => 20,
             'B' => 30,
             'C' => 16,
-            'D' => 16,
-            'E' => 15,
-            'F' => 25,
+            'D' => 40,
+            'E' => 16,
+            'F' => 15,
             'G' => 25,
-            'H' => 25,  
-            'I' => 18,
-            'J' => 12,
-            'K' => 35,
+            'H' => 25,
+            'I' => 25,
+            'J' => 18,
+            'K' => 12,
+            'L' => 35,
                         
         ];
     }
@@ -147,7 +149,8 @@ class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCust
         return $query->select([
             'solicitudes.espec', 
             DB::raw('servicios.servnomb as servicio_nombre'),
-            'solicitudes.estado',     
+            'solicitudes.estado',
+            'solicitudes.motivo_rechazo',
             'solicitudes.created_at',
             'solicitudes.updated_at',
             DB::raw('users.name as paciente_nombre'),
@@ -160,6 +163,24 @@ class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCust
     }
 
 
+
+    public function map($row): array
+    {
+        return [
+            $row->espec,
+            $row->servicio_nombre,
+            $row->estado,
+            $row->estado === 'Rechazada' ? ($row->motivo_rechazo ?? '') : '',
+            $row->created_at ? \Carbon\Carbon::parse($row->created_at)->format('d/m/Y') : '',
+            $row->updated_at ? \Carbon\Carbon::parse($row->updated_at)->format('d/m/Y') : '',
+            $row->paciente_nombre,
+            $row->paciente_apellido1,
+            $row->paciente_apellido2,
+            $row->paciente_ndocumento,
+            $row->codigo_eps,
+            $row->eps,
+        ];
+    }
 
     /*public function map($dato): array
     {

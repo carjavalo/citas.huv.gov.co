@@ -113,7 +113,24 @@
                                    {{$solicitude->servicio_nombre}}
                             </td>
                             <td class="px-6 py-4">
-                                     {{$solicitude->estado}}
+                                @if($solicitude->estado === 'Rechazada' && !empty($solicitude->motivo_rechazo))
+                                    <span class="inline-flex items-center gap-1">
+                                        <span>{{$solicitude->estado}}</span>
+                                        <span class="relative inline-block">
+                                            <button
+                                                type="button"
+                                                onclick="this.nextElementSibling.classList.toggle('hidden')"
+                                                class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-700 font-bold text-xs hover:bg-red-200 focus:outline-none"
+                                                title="Ver motivo de rechazo">?</button>
+                                            <div class="hidden absolute left-0 top-6 z-50 w-96 bg-white border border-red-200 rounded-lg shadow-lg p-3 text-sm text-gray-700">
+                                                <p class="font-semibold text-red-700 mb-1">Motivo de rechazo:</p>
+                                                <p>{{$solicitude->motivo_rechazo}}</p>
+                                            </div>
+                                        </span>
+                                    </span>
+                                @else
+                                    {{$solicitude->estado}}
+                                @endif
                             </td>
                             <td class="px-6 py-4">
                                       {{$solicitude->created_at->format('d/m/y')}}

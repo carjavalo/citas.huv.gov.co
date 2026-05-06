@@ -143,6 +143,7 @@ public function render()
                 DB::raw('eps.nombre as eps'),
                 'solicitudes.espec',
                 'solicitudes.estado',
+                'solicitudes.motivo_rechazo',
                 'solicitudes.created_at',
                 'solicitudes.updated_at',
             ])->orderBy('solicitudes.created_at','desc')->paginate(12);
