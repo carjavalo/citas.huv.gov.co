@@ -23,13 +23,8 @@
                             <div class="col-span-6 sm:col-span-3">
                                 <label for="eps.estado" class="block text-sm font-medium text-gray-700">Estado</label>
                                 <select wire:model.defer="eps_estado" id="eps.estado" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                    @if($eps_estado == true)
-                                    <option value="true" selected>Activo</option>
-                                    <option value="false">Inactivo</option>
-                                    @else
                                     <option value="true">Activo</option>
-                                    <option value="false" selected>Inactivo</option>
-                                    @endif
+                                    <option value="false">Inactivo</option>
                                 </select>
                                 @error('eps_estado') <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-500 text-white">{{ $message }}</span> @enderror
                             </div>

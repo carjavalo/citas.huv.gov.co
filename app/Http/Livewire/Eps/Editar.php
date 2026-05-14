@@ -19,7 +19,7 @@ class Editar extends Component
 
         $datos = eps::where('id','=',$eps_id)->first();
         $this->eps_nombre = $datos->nombre;
-        $this->eps_estado = $datos->estado;
+        $this->eps_estado = filter_var($datos->estado, FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false';
         $this->eps_id = $datos->id;
         $this->estados = [
             'activo' => 'true',
@@ -52,9 +52,11 @@ class Editar extends Component
     {
         $this->validate();
 
+        $estado = filter_var($this->eps_estado, FILTER_VALIDATE_BOOLEAN);
+
         eps::where('id','=',$this->eps_id)->update([
             'nombre'    => $this->eps_nombre,
-            'estado'    => $this->eps_estado,
+            'estado'    => $estado,
         ]);
         $this->cerrarModal();
         $this->emit('alertSuccess','Se editó la eps exitosamente.');  
