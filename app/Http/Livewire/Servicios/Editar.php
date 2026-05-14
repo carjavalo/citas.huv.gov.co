@@ -30,7 +30,7 @@ class Editar extends Component
         $this->authorize('admin.servicios.edit');
         $this->servicio = servicios::where('id','=',$serv_id)->first();  //Recibe el id del servicio
         $this->nombre = $this->servicio->servnomb;
-        $this->estado = $this->servicio->estado;
+        $this->estado = filter_var($this->servicio->estado, FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false';
     }
 
     public function render()
@@ -43,9 +43,11 @@ class Editar extends Component
 
         $this->validate();
 
+        $estado = filter_var($this->estado, FILTER_VALIDATE_BOOLEAN);
+
         $this->servicio->update([
             'servnomb'  => $this->nombre,
-            'estado'    => $this->estado,
+            'estado'    => $estado,
         ]);
 
         $this->emitTo('servicios.consulta','cerrarModal');
