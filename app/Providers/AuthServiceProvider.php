@@ -35,8 +35,10 @@ class AuthServiceProvider extends ServiceProvider
         VerifyEmail::toMailUsing(function ($notifiable, $url) {
             return (new MailMessage)
                 ->subject('Verificar correo electrónico')
-                ->line('Haz click en el botón de abajo para verificar tu correo electrónico.')
-                ->action('Verificar mi correo', $url);
+                ->line('Por favor, haz clic en el botón de abajo para verificar tu dirección de correo electrónico.')
+                ->line('Al hacer clic en "Verificar mi correo", confirmas que aceptas y estás de acuerdo con nuestras políticas de tratamiento y protección de datos personales.')
+                ->action('Verificar mi correo', $url)
+                ->line('Si no has creado una cuenta, no es necesario realizar ninguna acción.');
         });
     }
 }
