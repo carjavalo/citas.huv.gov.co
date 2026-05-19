@@ -34,11 +34,13 @@ class AuthServiceProvider extends ServiceProvider
 
         VerifyEmail::toMailUsing(function ($notifiable, $url) {
             return (new MailMessage)
-                ->subject('Verificar correo electrónico')
-                ->line('Por favor, haz clic en el botón de abajo para verificar tu dirección de correo electrónico.')
-                ->line('Al hacer clic en "Verificar mi correo", confirmas que aceptas y estás de acuerdo con nuestras políticas de tratamiento y protección de datos personales.')
+                ->subject('Verificación de Correo Electrónico')
+                ->greeting('Cordial saludo,')
+                ->line('Le solicitamos amablemente confirmar su dirección de correo electrónico haciendo clic en el botón a continuación.')
+                ->line('De conformidad con lo establecido en la Ley Estatutaria 1581 de 2012 (Ley de Protección de Datos Personales) y sus decretos reglamentarios, al hacer clic en "Verificar mi correo", usted manifiesta su consentimiento expreso, previo, informado e inequívoco para que el Hospital Universitario del Valle "Evaristo García" E.S.E. realice la recolección, almacenamiento, uso, tratamiento y supresión de sus datos personales, conforme a nuestra Política de Tratamiento de Información.')
                 ->action('Verificar mi correo', $url)
-                ->line('Si no has creado una cuenta, no es necesario realizar ninguna acción.');
+                ->line('Si usted no ha iniciado la creación de una cuenta en nuestro sistema institucional, por favor omitir y eliminar este mensaje.')
+                ->salutation('Atentamente,');
         });
     }
 }
