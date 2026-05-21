@@ -237,8 +237,8 @@ class Consulta extends Component
                 $user->assignRole($this->usu_rol);
                 // Si es Consultor, Coordinador o Administrador, guardar sede y pservicio; si no, limpiarlos
                 $rolesConSede = ['Consultor', 'Coordinador', 'Administrador'];
-                $sedeId = in_array($this->usu_rol, $rolesConSede) ? $this->usu_sede : null;
-                $pservicioId = in_array($this->usu_rol, $rolesConSede) ? $this->usu_pservicio : null;
+                $sedeId = in_array($this->usu_rol, $rolesConSede) ? ($this->usu_sede ?: null) : null;
+                $pservicioId = in_array($this->usu_rol, $rolesConSede) ? ($this->usu_pservicio ?: null) : null;
                 
                 $user->update([
                     'name'          => $this->nombres,
