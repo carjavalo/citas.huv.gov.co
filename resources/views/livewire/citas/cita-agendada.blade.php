@@ -107,7 +107,9 @@
 
                     <div class="col-span-6 sm:col-span-3 space-x-4 items-center">
                         <label for="ubicacion" class="block text-sm font-medium text-gray-700 mb-2">Ubicación</label>
-                        <input wire:model.defer="ubicacion" type="hidden" value="Calle. 5 # 36 - 08, Barrio San Fernando Cali, Valle del Cauca">Sur-Cl. 5 # 36 - 08, Barrio San Fernando Cali, Valle del Cauca
+                        <input wire:model.defer="ubicacion" type="hidden">
+                        {{ $ubicacion }}
+                    </div>
                         <!-- <input wire:model="ubicacion" type="radio" value="Sede Norte Clínica Valle Solidario Avenida 3N # 32AN-40, Cali, Valle del Cauca">Norte -->
                         @error('ubicacion') <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-500 text-white">{{ $message }}</span> @enderror
                     </div>

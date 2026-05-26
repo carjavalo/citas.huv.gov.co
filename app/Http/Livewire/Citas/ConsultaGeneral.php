@@ -231,6 +231,8 @@ class ConsultaGeneral extends Component
             $datos = solicitudes::where('solicitudes.id', $this->solicitud)
                 ->join('users', 'solicitudes.pacid', '=', 'users.id')
                 ->leftJoin('tipo_identificacions', 'users.tdocumento', '=', 'tipo_identificacions.id')
+                ->leftJoin('servicios', 'servicios.servcod', '=', 'solicitudes.espec')
+                ->leftJoin('pservicios', 'pservicios.id', '=', 'servicios.id_pservicios')
                 ->select([
                     'solicitudes.pacid as paciente_id',
                     'users.name as paciente_nombres',
@@ -248,6 +250,7 @@ class ConsultaGeneral extends Component
                     'solicitudes.codigo_autorizacion',
                     'solicitudes.estado',
                     'solicitudes.soporte_patologia',
+                    \Illuminate\Support\Facades\DB::raw('pservicios.sede_id as sede_id'),
                 ])
                 ->first(); // Cambiar get() por first() para obtener un solo registro
             
@@ -265,6 +268,13 @@ class ConsultaGeneral extends Component
             $this->observacion      = $datos->pacobs;
             $this->tipo_documento   = $datos->paciente_tipo_documento;
             $this->contacto         = $datos->paciente_telefono1;
+
+            if ($datos->sede_id == 2) {
+                $this->ubicacion = "Carrera 3b # 1a - 163 Barrio Collarejo, Cartago, Valle del Cauca";
+            } else {
+                $this->ubicacion = "Calle. 5 # 36 - 08, Barrio San Fernando Cali, Valle del Cauca";
+            }
+
             $this->archivos = [
                 'documento' => $datos->pacdocid,
                 'historia'  => $datos->pachis,
