@@ -111,16 +111,30 @@ class Procesado extends Component
         }
     }
 
+    /**
+     * Determina si el usuario actual puede exportar el reporte.
+     * Permite a Super Admin, Admin y Coordinador, o a quien tenga el permiso indicado.
+     */
+    private function puedeExportar(string $permiso): bool
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+        return $user->hasAnyRole(['Super Admin', 'Admin', 'Administrador', 'Coordinador'])
+            || $user->can($permiso);
+    }
+
     public function exportar()
     {
-        $this->authorize('admin.reporte.agentes.exportar.filtro_fecha');
+        abort_unless($this->puedeExportar('admin.reporte.agentes.exportar.filtro_fecha'), 403);
         $fechaHastaInclusive = Carbon::parse($this->fecha_hasta)->addDay()->format('Y-m-d');
         return (new ReporteAgentesxSolicitudesExport($this->fecha_desde, $fechaHastaInclusive))->download('reporte_agentes_desde_'.$this->fecha_desde.'_hasta_'.$this->fecha_hasta.'_.xlsx');
     }
 
     public function exportarHoy()
     {
-        $this->authorize('admin.reporte.agentes.exportar.hoy');
+        abort_unless($this->puedeExportar('admin.reporte.agentes.exportar.hoy'), 403);
         return (new ReporteAgentexSolicitudesHoyExport($this->hoy,$this->mañana))->download('reporte_'.now().'.xlsx'); //Exporta el reporte del método render.
     }
 }
