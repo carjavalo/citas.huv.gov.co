@@ -143,6 +143,12 @@ class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCust
                 if ($user->pservicio_id) {
                     $query->where('pservicios.id', $user->pservicio_id);
                 }
+                // Filtro de sede también disponible para usuarios no-Super Admin
+                // (solo si coincide con su sede asignada).
+                if (!empty($this->filters['filSede']) &&
+                    (!$user->sede_id || $this->filters['filSede'] == $user->sede_id)) {
+                    $query->where('sedes.id', $this->filters['filSede']);
+                }
             }
         }
         

@@ -131,6 +131,12 @@ public function render()
                 if ($user->pservicio_id) {
                     $query->where('pservicios.id', $user->pservicio_id);
                 }
+                // Filtro de sede también disponible para usuarios no-Super Admin.
+                // Solo se aplica si la sede seleccionada coincide con su sede
+                // asignada (no permite escapar de su restricción).
+                if ($this->filSede !== '' && (!$user->sede_id || $this->filSede == $user->sede_id)) {
+                    $query->where('sedes.id', $this->filSede);
+                }
             }
 
             $solicitudes = $query->select([

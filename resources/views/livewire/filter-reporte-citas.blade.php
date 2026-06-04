@@ -27,9 +27,8 @@
                     <input wire:model.lazy="filters.toDate" type="date" class="w-36 border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"/>
                 </div>
 
-                @role('Super Admin')
                 <div>
-                    Sede:
+                    Sedes:
                     <select wire:model="filSede" class="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
                         <option value="">Todas las sedes</option>
                         @foreach($sedes as $sede)
@@ -37,6 +36,8 @@
                         @endforeach
                     </select>
                 </div>
+
+                @role('Super Admin')
                 <div>
                     Servicio:
                     <select wire:model="filServicio" class="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
