@@ -8,6 +8,7 @@ use App\Models\servicios;
 use App\Models\solicitudes;
 use App\Models\Sede;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
@@ -96,17 +97,42 @@ class Solicitar extends Component
         // SEGURIDAD: Siempre usar Auth::user()->id, nunca confiar en $this->pacid del frontend
         $userId = Auth::user()->id;
 
-        // Validación extra: evitar duplicados por usuario, especialidad y estado pendiente en el mismo día
-        $existe = solicitudes::where('pacid', $userId)
-            ->where('espec', $this->espec)
-            ->where('estado', 'Pendiente')
-            ->whereDate('created_at', now()->toDateString())
-            ->exists();
-        if ($existe) {
-            $this->emit('alertError', 'Ya existe una solicitud pendiente para esta especialidad hoy.');
+        // BLOQUEO ATÓMICO: previene que peticiones AJAX paralelas (doble click,
+        // reintentos del navegador, etc.) ejecuten agendar() concurrentemente.
+        // El flag $procesando no es suficiente: cada request Livewire hidrata su
+        // propio estado desde el snapshot del cliente, por lo que dos requests
+        // disparados casi al tiempo verían $procesando=false.
+        $lock = Cache::lock('solicitar_cita_user_' . $userId, 30);
+        if (! $lock->get()) {
             $this->procesando = false;
+            $this->emit('alertError', 'Ya estamos procesando una solicitud suya. Por favor espere unos segundos.');
             return;
         }
+
+        try {
+            // Anti-duplicado por ventana temporal: bloquea cualquier solicitud
+            // del mismo paciente creada en los últimos 30 segundos, sin importar
+            // la especialidad. Esto evita ráfagas de duplicados como las
+            // observadas con sub-especialidades de Ortopedia.
+            $reciente = solicitudes::where('pacid', $userId)
+                ->where('created_at', '>=', now()->subSeconds(30))
+                ->exists();
+            if ($reciente) {
+                $this->emit('alertError', 'Ya registramos una solicitud suya recientemente. Espere unos segundos antes de enviar otra.');
+                return;
+            }
+
+            // Validación adicional: evitar duplicados por usuario, especialidad
+            // y estado pendiente en el mismo día.
+            $existe = solicitudes::where('pacid', $userId)
+                ->where('espec', $this->espec)
+                ->where('estado', 'Pendiente')
+                ->whereDate('created_at', now()->toDateString())
+                ->exists();
+            if ($existe) {
+                $this->emit('alertError', 'Ya existe una solicitud pendiente para esta especialidad hoy.');
+                return;
+            }
 
         if($this->espec == 1 || $this->espec == 491 || $this->espec == 4){
 
@@ -234,6 +260,12 @@ class Solicitar extends Component
             $this->emit('alertError', 'Ocurrió un error al crear la solicitud. Por favor intente nuevamente.');
         } finally {
             $this->procesando = false; // Liberar la bandera siempre
+        }
+        } finally {
+            // Liberar el lock atómico y la bandera al terminar (éxito o error,
+            // incluso si la validación de Livewire lanza excepción)
+            $this->procesando = false;
+            optional($lock)->release();
         }
     }
 
