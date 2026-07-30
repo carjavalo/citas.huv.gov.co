@@ -16,12 +16,14 @@ class ActividadesUsuariosExport implements FromCollection, WithHeadings, WithMap
     protected $fechaInicio;
     protected $fechaFin;
     protected $tipoActividad;
+    protected $documento;
 
-    public function __construct($fechaInicio, $fechaFin, $tipoActividad = '')
+    public function __construct($fechaInicio, $fechaFin, $tipoActividad = '', $documento = '')
     {
         $this->fechaInicio = $fechaInicio;
         $this->fechaFin = $fechaFin;
         $this->tipoActividad = $tipoActividad;
+        $this->documento = $documento;
     }
 
     public function collection()
@@ -36,6 +38,11 @@ class ActividadesUsuariosExport implements FromCollection, WithHeadings, WithMap
                 $q->whereDoesntHave('roles', function($roleQuery) {
                     $roleQuery->where('name', 'Super Admin');
                 });
+
+                // Mismo filtro por número de identificación que la vista
+                if (trim((string) $this->documento) !== '') {
+                    $q->where('ndocumento', 'like', '%' . trim($this->documento) . '%');
+                }
             });
 
         // Aplicar filtro de tipo si está seleccionado

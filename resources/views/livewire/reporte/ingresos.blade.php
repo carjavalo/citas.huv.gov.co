@@ -62,8 +62,30 @@
                     </select>
                 </div>
 
+                <!-- Número de identificación -->
+                <div class="flex flex-col gap-1">
+                    <label class="text-[9px] font-bold uppercase tracking-wide" style="color: #2e3a75;">
+                        N° Identificación
+                    </label>
+                    <div class="relative">
+                        <input wire:model.debounce.500ms="documento"
+                               class="w-44 bg-white border-gray-300 rounded-lg text-xs px-2.5 py-1.5 pr-7 transition-colors"
+                               type="text"
+                               inputmode="numeric"
+                               placeholder="Buscar documento..."/>
+                        @if($documento !== '')
+                            <button wire:click="limpiarDocumento"
+                                    type="button"
+                                    title="Limpiar"
+                                    class="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        @endif
+                    </div>
+                </div>
+
                 <!-- Botón Filtrar -->
-                <button wire:click="aplicarFiltros" 
+                <button wire:click="aplicarFiltros"
                         class="text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-md hover:opacity-90" 
                         style="background-color: #2e3a75;">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>

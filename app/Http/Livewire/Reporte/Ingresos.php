@@ -16,7 +16,8 @@ class Ingresos extends Component
     public $fechaInicio;
     public $fechaFin;
     public $tipoActividad = '';
-    
+    public $documento = ''; // Número de identificación del usuario
+
     public function mount()
     {
         $this->fechaInicio = Carbon::now()->subDays(7)->format('Y-m-d');
@@ -28,21 +29,27 @@ class Ingresos extends Component
         $this->resetPage();
     }
 
-    public function exportarExcel()
+    public function updatingDocumento()
     {
-        $nombreArchivo = 'actividades_usuarios_' . date('Y-m-d_His') . '.xlsx';
-        
-        return Excel::download(
-            new ActividadesUsuariosExport($this->fechaInicio, $this->fechaFin, $this->tipoActividad),
-            $nombreArchivo
-        );
+        $this->resetPage();
     }
 
-    public function render()
+    /**
+     * Limpia el filtro de número de identificación.
+     */
+    public function limpiarDocumento()
     {
-        // Query base para actividades
-        $query = UserActivity::with('user')
-            ->whereBetween('created_at', [
+        $this->documento = '';
+        $this->resetPage();
+    }
+
+    /**
+     * Consulta base compartida por el listado y por las estadísticas, para que
+     * los totales siempre correspondan a lo que se ve en la tabla.
+     */
+    private function baseQuery()
+    {
+        return UserActivity::whereBetween('created_at', [
                 $this->fechaInicio . ' 00:00:00',
                 $this->fechaFin . ' 23:59:59'
             ])
@@ -51,7 +58,28 @@ class Ingresos extends Component
                 $q->whereDoesntHave('roles', function($roleQuery) {
                     $roleQuery->where('name', 'Super Admin');
                 });
+
+                // Filtrar por número de identificación si se indicó
+                if (trim($this->documento) !== '') {
+                    $q->where('ndocumento', 'like', '%' . trim($this->documento) . '%');
+                }
             });
+    }
+
+    public function exportarExcel()
+    {
+        $nombreArchivo = 'actividades_usuarios_' . date('Y-m-d_His') . '.xlsx';
+
+        return Excel::download(
+            new ActividadesUsuariosExport($this->fechaInicio, $this->fechaFin, $this->tipoActividad, $this->documento),
+            $nombreArchivo
+        );
+    }
+
+    public function render()
+    {
+        // Query base para actividades
+        $query = $this->baseQuery()->with('user');
 
         // Aplicar filtro de tipo si está seleccionado
         if ($this->tipoActividad && $this->tipoActividad !== '') {
@@ -61,51 +89,14 @@ class Ingresos extends Component
         // Ordenar por fecha descendente y paginar
         $actividades = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        // Estadísticas
-        $totalRegistros = UserActivity::whereBetween('created_at', [
-            $this->fechaInicio . ' 00:00:00',
-            $this->fechaFin . ' 23:59:59'
-        ])->whereHas('user', function($q) {
-            $q->whereDoesntHave('roles', function($roleQuery) {
-                $roleQuery->where('name', 'Super Admin');
-            });
-        })->count();
+        // Estadísticas (respetan el filtro de documento igual que la tabla)
+        $totalRegistros = $this->baseQuery()->count();
 
-        $nuevosUsuarios = UserActivity::where('tipo_actividad', 'registro')
-            ->whereBetween('created_at', [
-                $this->fechaInicio . ' 00:00:00',
-                $this->fechaFin . ' 23:59:59'
-            ])
-            ->whereHas('user', function($q) {
-                $q->whereDoesntHave('roles', function($roleQuery) {
-                    $roleQuery->where('name', 'Super Admin');
-                });
-            })
-            ->count();
+        $nuevosUsuarios = $this->baseQuery()->where('tipo_actividad', 'registro')->count();
 
-        $ingresos = UserActivity::where('tipo_actividad', 'login')
-            ->whereBetween('created_at', [
-                $this->fechaInicio . ' 00:00:00',
-                $this->fechaFin . ' 23:59:59'
-            ])
-            ->whereHas('user', function($q) {
-                $q->whereDoesntHave('roles', function($roleQuery) {
-                    $roleQuery->where('name', 'Super Admin');
-                });
-            })
-            ->count();
+        $ingresos = $this->baseQuery()->where('tipo_actividad', 'login')->count();
 
-        $salidas = UserActivity::where('tipo_actividad', 'logout')
-            ->whereBetween('created_at', [
-                $this->fechaInicio . ' 00:00:00',
-                $this->fechaFin . ' 23:59:59'
-            ])
-            ->whereHas('user', function($q) {
-                $q->whereDoesntHave('roles', function($roleQuery) {
-                    $roleQuery->where('name', 'Super Admin');
-                });
-            })
-            ->count();
+        $salidas = $this->baseQuery()->where('tipo_actividad', 'logout')->count();
 
         return view('livewire.reporte.ingresos', [
             'actividades' => $actividades,
