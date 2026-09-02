@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Livewire\Citas\ConsultaGeneral;
 use App\Mail\ReenvioCitacion;
 use App\Models\solicitudes;
 use Illuminate\Console\Command;
@@ -42,6 +43,10 @@ class DiagnosticarSolicitudesProcesando extends Command
     public function handle()
     {
         $auto = (bool) $this->option('auto');
+
+        if ($auto) {
+            $this->limpiarBloqueosCaducados();
+        }
 
         $solicitudes = $this->consultar($auto);
 
@@ -244,6 +249,25 @@ class DiagnosticarSolicitudesProcesando extends Command
         });
 
         return [$agendadas, $devueltas];
+    }
+
+    /**
+     * Suelta los bloqueos de agendamiento vencidos.
+     *
+     * Desde que abrir el modal ya no cambia 'estado', un agendamiento
+     * abandonado solo deja `procesando_desde` puesto. El bloqueo caduca por
+     * tiempo, así que esto es únicamente higiene de datos: la solicitud sigue
+     * en su cola y operativa aunque no se limpie.
+     */
+    private function limpiarBloqueosCaducados(): void
+    {
+        $liberados = solicitudes::whereNotNull('procesando_desde')
+            ->where('procesando_desde', '<', now()->subMinutes(ConsultaGeneral::MINUTOS_BLOQUEO))
+            ->update(['procesando_desde' => null]);
+
+        if ($liberados > 0) {
+            $this->info("Bloqueos de agendamiento caducados liberados: {$liberados}.");
+        }
     }
 
     /** Watchdog: repara en silencio y deja constancia en el log. */

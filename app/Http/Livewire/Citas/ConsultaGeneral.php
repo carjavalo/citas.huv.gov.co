@@ -96,7 +96,8 @@ class ConsultaGeneral extends Component
             ->join('eps', 'users.eps', '=', 'eps.id')
             ->join('servicios', 'solicitudes.espec', '=', 'servicios.servcod')
             ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
-            ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id');
+            ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id')
+            ->leftJoin('users as consultor', 'solicitudes.usercod', '=', 'consultor.id');
         
         // Aplicar filtros solo si tienen valor (evitar búsquedas LIKE innecesarias)
         if (!empty($this->filserv)) {
@@ -142,6 +143,10 @@ class ConsultaGeneral extends Component
                 'eps.nombre as eps_nombre',
                 'servicios.servnomb',
                 'sedes.nombre as sede_nombre',
+                // Para mostrar "en agendamiento" sin sacar la solicitud de la cola.
+                'solicitudes.procesando_desde',
+                'solicitudes.usercod',
+                \Illuminate\Support\Facades\DB::raw("TRIM(CONCAT(COALESCE(consultor.name,''),' ',COALESCE(consultor.apellido1,''))) as consultor_nombre"),
             ])
             ->paginate(10);
         
@@ -233,6 +238,7 @@ class ConsultaGeneral extends Component
                 ->leftJoin('tipo_identificacions', 'users.tdocumento', '=', 'tipo_identificacions.id')
                 ->leftJoin('servicios', 'servicios.servcod', '=', 'solicitudes.espec')
                 ->leftJoin('pservicios', 'pservicios.id', '=', 'servicios.id_pservicios')
+                ->leftJoin('users as consultor', 'solicitudes.usercod', '=', 'consultor.id')
                 ->select([
                     'solicitudes.pacid as paciente_id',
                     'users.name as paciente_nombres',
@@ -250,6 +256,9 @@ class ConsultaGeneral extends Component
                     'solicitudes.codigo_autorizacion',
                     'solicitudes.estado',
                     'solicitudes.soporte_patologia',
+                    'solicitudes.procesando_desde',
+                    'solicitudes.usercod',
+                    \Illuminate\Support\Facades\DB::raw("TRIM(CONCAT(COALESCE(consultor.name,''),' ',COALESCE(consultor.apellido1,''))) as consultor_nombre"),
                     \Illuminate\Support\Facades\DB::raw('pservicios.sede_id as sede_id'),
                 ])
                 ->first(); // Cambiar get() por first() para obtener un solo registro
@@ -282,36 +291,50 @@ class ConsultaGeneral extends Component
                 'orden'     => $datos->pacordmed,
                 'soporte_patologia' => $datos->soporte_patologia,
             ];
+            // Bloqueo suave: si otro consultor abrió esta misma solicitud hace
+            // poco, no se le quita de las manos.
+            if ($this->bloqueadaPorOtro($datos)) {
+                $this->emit('alertError', 'Esta solicitud la está agendando '.($datos->consultor_nombre ?: 'otro consultor')
+                    .' desde hace '.Carbon::parse($datos->procesando_desde)->diffInMinutes(now()).' minuto(s). Inténtelo más tarde.');
+                return;
+            }
+
             $this->codigo_autorizacion = $datos->codigo_autorizacion;
             $this->hoy = Carbon::now()->format('Y-m-d');
-            
+
             // Abrir modal inmediatamente (sin esperar la actualización de estado)
             $this->abrirModal();
-            
-            // Actualizar el estado de forma asíncrona en background.
-            // Si la solicitud ya estaba en 'Procesando' (dos consultores la
-            // abrieron a la vez, o quedó abierta antes) NO se sobrescribe
-            // estado_anterior: guardarlo como 'Procesando' dejaría la solicitud
-            // atascada, porque el botón "Estado anterior" la devolvería a sí misma.
-            $cambios = [
-                'estado'  => 'Procesando',
-                'usercod' => Auth::user()->id,
-                // Marca el inicio del bloqueo para que el watchdog pueda
-                // distinguir un agendamiento en curso de uno abandonado.
+
+            // NO se toca 'estado'. Antes se ponía en 'Procesando' y, si el
+            // consultor cerraba la pestaña o perdía la sesión, la solicitud
+            // quedaba atascada fuera de todas las colas de forma permanente.
+            // Ahora el agendamiento en curso se marca con un bloqueo suave que
+            // caduca solo: la solicitud sigue en 'Pendiente'/'Espera' y nunca
+            // desaparece de la vista, pase lo que pase con el navegador.
+            solicitudes::where('id', $this->solicitud)->update([
                 'procesando_desde' => now(),
-            ];
-            if ($datos->estado !== 'Procesando') {
-                $cambios['estado_anterior'] = $datos->estado;
-            } else {
-                // Ya estaba bloqueada por otro consultor: no se reinicia el
-                // contador, si no el watchdog nunca la liberaría.
-                unset($cambios['procesando_desde']);
-            }
-            solicitudes::where('id', $this->solicitud)->update($cambios);
-            
+                'usercod'          => Auth::user()->id,
+            ]);
+
         } catch (\Throwable $th) {
             $this->emit('alertError','Ocurrió un error: '.$th->getMessage());
         }
+    }
+
+    /**
+     * Minutos que un agendamiento en curso reserva la solicitud para su
+     * consultor. Pasado ese tiempo el bloqueo caduca por sí solo: no hace falta
+     * que nadie lo libere, que es lo que antes dejaba solicitudes atascadas.
+     */
+    public const MINUTOS_BLOQUEO = 30;
+
+    /** ¿Otro consultor tiene un bloqueo vigente sobre esta solicitud? */
+    private function bloqueadaPorOtro($datos): bool
+    {
+        return $datos->procesando_desde
+            && $datos->usercod
+            && (int) $datos->usercod !== (int) Auth::user()->id
+            && Carbon::parse($datos->procesando_desde)->gt(now()->subMinutes(self::MINUTOS_BLOQUEO));
     }
 
     public function abrirModal()
@@ -333,15 +356,17 @@ class ConsultaGeneral extends Component
             $this->modal = false;
             return;
         }
-        // Sin el default la solicitud se quedaba en 'Procesando' al cancelar el
-        // modal cuando estado_anterior venía vacío.
-        $destino = $solicitud->estado_anterior === 'Espera' ? 'Espera' : 'Pendiente';
-        $solicitud->update([
-            'estado'            => $destino,
-            'estado_anterior'   => null,
-            'procesando_desde'  => null,
-            'usercod'           => Auth::user()->id,
-        ]);
+        // El estado ya no se toca al abrir el modal, así que cancelar solo
+        // suelta el bloqueo. Las solicitudes heredadas que sí quedaron en
+        // 'Procesando' se devuelven además a su cola.
+        $cambios = ['procesando_desde' => null, 'usercod' => Auth::user()->id];
+
+        if ($solicitud->estado === 'Procesando') {
+            $cambios['estado']          = $solicitud->estado_anterior === 'Espera' ? 'Espera' : 'Pendiente';
+            $cambios['estado_anterior'] = null;
+        }
+
+        $solicitud->update($cambios);
         $this->resetExcept(['filestado','filserv','fileps']);
         $this->emitSelf('render');
         $this->modal = false;
@@ -398,9 +423,9 @@ class ConsultaGeneral extends Component
             $this->emit('alertSuccess','Cita agendada. La notificación se está enviando al correo del paciente.'); //Evento para emitir alerta
 
         } catch (\Throwable $th) {
-            // Si falla el guardado o el encolado, la solicitud quedaría atascada
-            // en 'Procesando' y desaparecería de la cola de pendientes. Se
-            // devuelve a su estado anterior para que pueda volver a agendarse.
+            // La transacción ya revirtió el UPDATE, así que la solicitud sigue
+            // en su cola; aquí solo se suelta el bloqueo para que otro
+            // consultor pueda retomarla de inmediato.
             \Log::error('Error al notificar cita', [
                 'solicitud_id' => $this->solicitud,
                 'correo'       => $this->correo,
@@ -408,16 +433,18 @@ class ConsultaGeneral extends Component
             ]);
 
             $solicitud = solicitudes::find($this->solicitud);
-            if ($solicitud && $solicitud->estado === 'Procesando') {
-                $destino = in_array($solicitud->estado_anterior, ['Pendiente', 'Espera'], true)
-                    ? $solicitud->estado_anterior
-                    : 'Pendiente';
-                $solicitud->update([
-                    'estado'           => $destino,
-                    'estado_anterior'  => null,
-                    'procesando_desde' => null,
-                    'usercod'          => Auth::user()->id,
-                ]);
+            if ($solicitud) {
+                $cambios = ['procesando_desde' => null, 'usercod' => Auth::user()->id];
+
+                // Solicitudes heredadas que sí quedaron en 'Procesando'.
+                if ($solicitud->estado === 'Procesando') {
+                    $cambios['estado']          = in_array($solicitud->estado_anterior, ['Pendiente', 'Espera'], true)
+                        ? $solicitud->estado_anterior
+                        : 'Pendiente';
+                    $cambios['estado_anterior'] = null;
+                }
+
+                $solicitud->update($cambios);
             }
 
             $this->cerrarModal();

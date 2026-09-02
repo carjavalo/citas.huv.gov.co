@@ -242,6 +242,14 @@
                                                         @default
                                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-800">{{ $solicitud->estado }}</span>
                                                     @endswitch
+                                                    {{-- Bloqueo suave: avisa que alguien la está agendando sin sacarla
+                                                         de la cola. Caduca solo, así que nunca deja la solicitud varada. --}}
+                                                    @if ($solicitud->procesando_desde && \Carbon\Carbon::parse($solicitud->procesando_desde)->gt(now()->subMinutes(\App\Http\Livewire\Citas\ConsultaGeneral::MINUTOS_BLOQUEO)))
+                                                        <span class="mt-1 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800"
+                                                              title="Agendamiento en curso desde {{ $solicitud->procesando_desde }}">
+                                                            En agendamiento{{ $solicitud->consultor_nombre ? ' · '.$solicitud->consultor_nombre : '' }}
+                                                        </span>
+                                                    @endif
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
