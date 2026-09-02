@@ -34,6 +34,12 @@ use Illuminate\Support\Facades\Auth;
 |
 */
 
+Route::get('prueba-s3', function() {
+    $files = Storage::disk('s3')->files();
+
+    return $files;
+});
+
 Route::get('/registro', UsuariosRegistro::class)->name('registro');
 
 // Ruta para capturar accesos directos a /Documentos/* (URLs antiguas o directas)

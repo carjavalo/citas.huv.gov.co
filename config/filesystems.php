@@ -48,6 +48,9 @@ return [
         ],
 
         's3' => [
+            // Definir la carpeta del proyecto
+            'root' => env('AWS_ROOT'),
+
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
             'secret' => env('AWS_SECRET_ACCESS_KEY'),

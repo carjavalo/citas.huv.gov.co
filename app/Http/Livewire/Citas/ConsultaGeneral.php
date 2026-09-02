@@ -296,9 +296,16 @@ class ConsultaGeneral extends Component
             $cambios = [
                 'estado'  => 'Procesando',
                 'usercod' => Auth::user()->id,
+                // Marca el inicio del bloqueo para que el watchdog pueda
+                // distinguir un agendamiento en curso de uno abandonado.
+                'procesando_desde' => now(),
             ];
             if ($datos->estado !== 'Procesando') {
                 $cambios['estado_anterior'] = $datos->estado;
+            } else {
+                // Ya estaba bloqueada por otro consultor: no se reinicia el
+                // contador, si no el watchdog nunca la liberaría.
+                unset($cambios['procesando_desde']);
             }
             solicitudes::where('id', $this->solicitud)->update($cambios);
             
@@ -326,30 +333,15 @@ class ConsultaGeneral extends Component
             $this->modal = false;
             return;
         }
-        switch ($solicitud->estado_anterior) {
-            case 'Espera':
-                $solicitud->update([
-                    'estado'            => 'Espera',
-                    'estado_anterior'   => null,
-                    'usercod'           => Auth::user()->id]);
-                break;
-
-            case 'Pendiente':
-                $solicitud->update([
-                'estado'            => 'Pendiente',
-                'estado_anterior'   => null,
-                'usercod'           => Auth::user()->id]);
-                break;
-
-            // Sin este default la solicitud se quedaba en 'Procesando' al
-            // cancelar el modal cuando estado_anterior venía vacío.
-            default:
-                $solicitud->update([
-                'estado'            => 'Pendiente',
-                'estado_anterior'   => null,
-                'usercod'           => Auth::user()->id]);
-                break;
-        }
+        // Sin el default la solicitud se quedaba en 'Procesando' al cancelar el
+        // modal cuando estado_anterior venía vacío.
+        $destino = $solicitud->estado_anterior === 'Espera' ? 'Espera' : 'Pendiente';
+        $solicitud->update([
+            'estado'            => $destino,
+            'estado_anterior'   => null,
+            'procesando_desde'  => null,
+            'usercod'           => Auth::user()->id,
+        ]);
         $this->resetExcept(['filestado','filserv','fileps']);
         $this->emitSelf('render');
         $this->modal = false;
@@ -359,29 +351,56 @@ class ConsultaGeneral extends Component
     {
         $this->authorize('citas.consulta.agendar');
         $this->validate();
-        $ruta = 'Documentos/usuario'.$this->pacid.'/solicitud_'.$this->solnum.'/';  //Se almacena la ruta de la solicitud
+        $carpeta = 'Documentos/usuario'.$this->pacid.'/solicitud_'.$this->solnum;  //Se almacena la ruta de la solicitud
 
         try {
             $paciente = User::where('id','=',$this->pacid)->get(['name','apellido1','apellido2'])->first();
             $datos_paciente = $paciente->name.' '.$paciente->apellido1.' '.$paciente->apellido2;
+
+            // Los archivos se guardan ANTES de encolar el correo: el job corre
+            // en otro proceso, donde el archivo temporal de Livewire ya no
+            // existe, así que solo se le pueden pasar rutas definitivas.
+            $rutas_adjuntos = [];
             foreach($this->adjunto as $archivo){
-                $archivo->storeAs('Documentos/usuario'.$this->pacid.'/solicitud_'.$this->solnum,$archivo->getClientOriginalName(), 'upload');
+                if (!$archivo) {
+                    continue; // Los adjuntos 1 y 2 son opcionales.
+                }
+                $archivo->storeAs($carpeta, $archivo->getClientOriginalName(), 'upload');
+                $rutas_adjuntos[] = public_path($carpeta.'/'.$archivo->getClientOriginalName());
             }
-            Mail::to($this->correo)->send(new DatosCita($this->fecha, $this->hora, $this->ubicacion, $this->adjunto, $this->reserva, $datos_paciente, $this->mensaje, $ruta)); //SE ENVÍA CORREO CON LOS DATOS DE LA CITA
-            solicitudes::where('id', $this->solicitud)->update([
-                'estado'                                    => 'Agendado',
-                'usercod'                                   => Auth::user()->id,
-                'certfdo_cita'                              => 'Documentos/usuario'.$this->pacid.'/solicitud_'.$this->solnum.'/'.$this->adjunto[0]->getClientOriginalName(),
-                'solicitud_mensaje_agendamiento'            => $this->mensaje,
-            ]);
+            $certificado = $carpeta.'/'.$this->adjunto[0]->getClientOriginalName();
+
+            // La cita se persiste y el correo se encola en la misma transacción:
+            // o quedan ambos, o no queda ninguno. afterCommit() evita que el
+            // worker tome el job antes de que el nuevo estado esté confirmado.
+            \Illuminate\Support\Facades\DB::transaction(function () use ($certificado, $rutas_adjuntos, $datos_paciente) {
+                solicitudes::where('id', $this->solicitud)->update([
+                    'estado'                                    => 'Agendado',
+                    'usercod'                                   => Auth::user()->id,
+                    'certfdo_cita'                              => $certificado,
+                    // Guardar fecha y hora permite reconstruir o reenviar la
+                    // citación; antes solo existían dentro del correo.
+                    'fecha_cita'                                => $this->fecha,
+                    'hora_cita'                                 => $this->hora,
+                    'solicitud_mensaje_agendamiento'            => $this->mensaje,
+                    'estado_anterior'                           => null,
+                    'procesando_desde'                          => null,
+                ]);
+
+                Mail::to($this->correo)->queue(
+                    (new DatosCita($this->fecha, $this->hora, $this->ubicacion, $rutas_adjuntos, $this->reserva, $datos_paciente, $this->mensaje))
+                        ->afterCommit()
+                ); //SE ENCOLA EL CORREO CON LOS DATOS DE LA CITA
+            });
+
             $this->cerrarModal();
             $this->resetExcept(['filestado','filserv','aseguradoras']);
-            $this->emit('alertSuccess','Notificación de cita enviada satisfactoriamente.'); //Evento para emitir alerta
+            $this->emit('alertSuccess','Cita agendada. La notificación se está enviando al correo del paciente.'); //Evento para emitir alerta
 
         } catch (\Throwable $th) {
-            // Si el envío del correo falla, la solicitud quedaría atascada en
-            // 'Procesando' y desaparecería de la cola de pendientes. Se devuelve
-            // a su estado anterior para que pueda volver a agendarse.
+            // Si falla el guardado o el encolado, la solicitud quedaría atascada
+            // en 'Procesando' y desaparecería de la cola de pendientes. Se
+            // devuelve a su estado anterior para que pueda volver a agendarse.
             \Log::error('Error al notificar cita', [
                 'solicitud_id' => $this->solicitud,
                 'correo'       => $this->correo,
@@ -394,14 +413,15 @@ class ConsultaGeneral extends Component
                     ? $solicitud->estado_anterior
                     : 'Pendiente';
                 $solicitud->update([
-                    'estado'          => $destino,
-                    'estado_anterior' => null,
-                    'usercod'         => Auth::user()->id,
+                    'estado'           => $destino,
+                    'estado_anterior'  => null,
+                    'procesando_desde' => null,
+                    'usercod'          => Auth::user()->id,
                 ]);
             }
 
             $this->cerrarModal();
-            $this->emit('alertError', 'No se pudo enviar la notificación de la cita. La solicitud volvió a la cola para agendarla nuevamente. Detalle: '.$th->getMessage());
+            $this->emit('alertError', 'No se pudo agendar la cita. La solicitud volvió a la cola para agendarla nuevamente. Detalle: '.$th->getMessage());
         }
     }
 
@@ -482,6 +502,7 @@ class ConsultaGeneral extends Component
         solicitudes::where('id', $sol_id)->update([
             'estado' => $estado_anterior,
             'estado_anterior'   => null,
+            'procesando_desde'  => null,
             'usercod'   => Auth::user()->id,
         ]);
         $this->emit('alertSuccess', 'La solicitud volvió al estado "'.$estado_anterior.'".');

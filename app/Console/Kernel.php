@@ -17,6 +17,14 @@ class Kernel extends ConsoleKernel
     {
         // Verifica integridad de solicitudes todos los días a las 2:00 AM
         $schedule->command('solicitudes:verificar-integridad')->dailyAt('02:00');
+
+        // Watchdog: libera las solicitudes que llevan más de 30 minutos en
+        // 'Procesando' ("En proceso"). Se quedaban bloqueadas para siempre
+        // cuando el consultor abandonaba el modal de agendamiento.
+        $schedule->command('solicitudes:procesando --auto')
+            ->everyFifteenMinutes()
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**

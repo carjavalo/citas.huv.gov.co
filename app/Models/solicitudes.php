@@ -32,6 +32,19 @@ class solicitudes extends Model
         'motivo_rechazo',
         'motivo_espera',
         'soporte_patologia',
+        // Sin estas columnas en $fillable, los update() hechos sobre una
+        // instancia del modelo (cancelar(), watchdog) las descartaban en
+        // silencio y estado_anterior nunca se limpiaba.
+        'certfdo_cita',
+        'estado_anterior',
+        'procesando_desde',
+        'fecha_cita',
+        'hora_cita',
+        'solicitud_mensaje_agendamiento',
+    ];
+
+    protected $casts = [
+        'procesando_desde' => 'datetime',
     ];
 
     protected $table = 'solicitudes';
