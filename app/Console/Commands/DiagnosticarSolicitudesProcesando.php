@@ -40,6 +40,14 @@ class DiagnosticarSolicitudesProcesando extends Command
     /** Minutos de bloqueo tras los que el watchdog considera abandonado el agendamiento. */
     private const MINUTOS_AUTO = 30;
 
+    /**
+     * Prefijos con los que Solicitar.php guarda los documentos que sube el
+     * PACIENTE. El certificado que sube el consultor en cita() se guarda con su
+     * nombre original, sin prefijo: por eso un archivo sin ninguno de estos
+     * prefijos es la prueba de que el agendamiento sí se completó.
+     */
+    private const PREFIJOS_PACIENTE = ['HC_', 'OM_', 'DI_', 'AU_', 'SP_'];
+
     public function handle()
     {
         $auto = (bool) $this->option('auto');
@@ -76,14 +84,14 @@ class DiagnosticarSolicitudesProcesando extends Command
 
         $this->line('');
         $this->info('RESUMEN');
-        $this->line('  NOTIFICADO  : '.count($notificadas).'  (la cita se guardó; solo falta el estado)');
-        $this->line('  SIN AGENDAR : '.count($sinAgendar).'  (nunca se agendó; vuelven a la cola)');
+        $this->line('  AGENDADAS   : '.count($notificadas).'  (hay certificado; pasan a "Agendado")');
+        $this->line('  SIN AGENDAR : '.count($sinAgendar).'  (no hay certificado; vuelven a la cola)');
         $this->line('');
 
         if (count($sinAgendar) > 0) {
-            $this->warn('Las solicitudes SIN AGENDAR no se pueden marcar como "Agendado": el consultor');
-            $this->warn('nunca llegó a guardar la cita, así que no hay fecha ni hora que reconstruir.');
-            $this->warn('Vuelven a "Pendiente"/"Espera" para que un consultor las agende de nuevo.');
+            $this->warn('Las SIN AGENDAR no tienen certificado ni en la base ni en disco, así que');
+            $this->warn('el consultor no llegó a subirlo y no hay cita que reconstruir. Vuelven a');
+            $this->warn('"Pendiente"/"Espera" para agendarlas de nuevo.');
             $this->line('');
         }
 
@@ -188,16 +196,29 @@ class DiagnosticarSolicitudesProcesando extends Command
             $certificado = $sol->certfdo_cita;
             $existeCert  = $certificado && file_exists(public_path($certificado));
 
+            // certfdo_cita se escribía en el MISMO update que ponía 'Agendado',
+            // y ese update iba DESPUÉS de guardar el archivo y enviar el correo.
+            // Por eso certfdo_cita vacío no prueba que la cita no se enviara:
+            // hay que mirar el disco antes de devolver nada a la cola.
+            $recuperado = $certificado ? null : $this->buscarCertificadoEnDisco($sol);
+
             if ($certificado) {
                 $clasificacion = $existeCert ? 'NOTIFICADO' : 'NOTIFICADO (sin archivo)';
                 $accion        = 'estado -> Agendado';
-                $notificadas[] = $sol;
+                $cert          = $existeCert ? 'si' : 'ruta rota';
+                $notificadas[] = ['sol' => $sol, 'certfdo' => null];
+            } elseif ($recuperado) {
+                $clasificacion = 'AGENDADA (cert. en disco)';
+                $accion        = 'estado -> Agendado + certfdo';
+                $cert          = 'recuperado';
+                $notificadas[] = ['sol' => $sol, 'certfdo' => $recuperado];
             } else {
                 $destino       = in_array($sol->estado_anterior, self::ESTADOS_RETORNO, true)
                     ? $sol->estado_anterior
                     : 'Pendiente';
                 $clasificacion = 'SIN AGENDAR';
                 $accion        = 'estado -> '.$destino;
+                $cert          = 'no';
                 $sinAgendar[]  = ['sol' => $sol, 'destino' => $destino];
             }
 
@@ -207,7 +228,7 @@ class DiagnosticarSolicitudesProcesando extends Command
                 $sol->ndocumento,
                 mb_strimwidth((string) $sol->servnomb, 0, 22, '...'),
                 $sol->estado_anterior ?? '-',
-                $existeCert ? 'si' : ($certificado ? 'ruta rota' : 'no'),
+                $cert,
                 $sol->fecha_cita ? trim($sol->fecha_cita.' '.$sol->hora_cita) : '-',
                 $sol->procesando_desde ? (string) $sol->procesando_desde : $sol->updated_at.' (aprox.)',
                 $clasificacion,
@@ -216,6 +237,49 @@ class DiagnosticarSolicitudesProcesando extends Command
         }
 
         return [$notificadas, $sinAgendar, $filas];
+    }
+
+    /**
+     * Busca en disco el certificado de citación de una solicitud.
+     *
+     * cita() lo guarda bajo el `solnum` del paciente (no bajo el id, que es lo
+     * que usa Solicitar.php para los documentos del paciente) y conserva el
+     * nombre original del archivo, sin prefijo.
+     *
+     * @return string|null Ruta relativa a public/, o null si no hay certificado.
+     */
+    private function buscarCertificadoEnDisco($sol): ?string
+    {
+        $carpetaRel = 'Documentos/usuario'.$sol->pacid.'/solicitud_'.$sol->solnum;
+        $carpetaAbs = public_path($carpetaRel);
+
+        if (!is_dir($carpetaAbs)) {
+            return null;
+        }
+
+        $candidatos = [];
+        foreach ((array) scandir($carpetaAbs) as $archivo) {
+            if ($archivo === '.' || $archivo === '..' || !is_file($carpetaAbs.'/'.$archivo)) {
+                continue;
+            }
+            foreach (self::PREFIJOS_PACIENTE as $prefijo) {
+                if (strpos($archivo, $prefijo) === 0) {
+                    continue 2; // Documento del paciente, no el certificado.
+                }
+            }
+            $candidatos[] = $archivo;
+        }
+
+        if (empty($candidatos)) {
+            return null;
+        }
+
+        // Si hubo varios agendamientos, el certificado vigente es el más reciente.
+        usort($candidatos, function ($a, $b) use ($carpetaAbs) {
+            return filemtime($carpetaAbs.'/'.$b) <=> filemtime($carpetaAbs.'/'.$a);
+        });
+
+        return $carpetaRel.'/'.$candidatos[0];
     }
 
     /**
@@ -229,12 +293,18 @@ class DiagnosticarSolicitudesProcesando extends Command
         $devueltas = 0;
 
         DB::transaction(function () use ($notificadas, $sinAgendar, &$agendadas, &$devueltas) {
-            foreach ($notificadas as $sol) {
-                solicitudes::where('id', $sol->id)->update([
+            foreach ($notificadas as $item) {
+                $cambios = [
                     'estado'           => 'Agendado',
                     'estado_anterior'  => null,
                     'procesando_desde' => null,
-                ]);
+                ];
+                // Solo para las recuperadas de disco: deja constancia del
+                // certificado para que "Detalles" y el reenvío funcionen.
+                if ($item['certfdo']) {
+                    $cambios['certfdo_cita'] = $item['certfdo'];
+                }
+                solicitudes::where('id', $item['sol']->id)->update($cambios);
                 $agendadas++;
             }
 
@@ -279,7 +349,7 @@ class DiagnosticarSolicitudesProcesando extends Command
             'agendadas' => $agendadas,
             'devueltas' => $devueltas,
             'ids'       => array_merge(
-                array_map(function ($sol) { return $sol->id; }, $notificadas),
+                array_map(function ($item) { return $item['sol']->id; }, $notificadas),
                 array_map(function ($item) { return $item['sol']->id; }, $sinAgendar)
             ),
         ]);
@@ -298,8 +368,11 @@ class DiagnosticarSolicitudesProcesando extends Command
         $enviados = 0;
         $fallidos = 0;
 
-        foreach ($notificadas as $sol) {
-            if (!$sol->certfdo_cita || !file_exists(public_path($sol->certfdo_cita))) {
+        foreach ($notificadas as $item) {
+            $sol  = $item['sol'];
+            $ruta = $item['certfdo'] ?: $sol->certfdo_cita;
+
+            if (!$ruta || !file_exists(public_path($ruta))) {
                 $this->warn("  ID {$sol->id}: sin certificado en disco, no se reenvía.");
                 $fallidos++;
                 continue;
@@ -310,7 +383,7 @@ class DiagnosticarSolicitudesProcesando extends Command
                 Mail::to($sol->email)->send(new ReenvioCitacion(
                     $paciente,
                     $sol->servnomb,
-                    public_path($sol->certfdo_cita),
+                    public_path($ruta),
                     $sol->solicitud_mensaje_agendamiento
                 ));
                 $this->info("  ID {$sol->id}: reenviado a {$sol->email}");
