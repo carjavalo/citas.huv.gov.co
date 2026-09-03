@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\Sede;
 use App\Models\servicios;
 use App\Models\eps;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -274,6 +275,44 @@ class ConsultaGeneral extends Component
     }
 
     /**
+     * Vacía la cola de correos justo DESPUÉS de responder al navegador.
+     *
+     * terminating() se ejecuta cuando la respuesta ya salió, así que el
+     * consultor no espera a que el SMTP termine: la pantalla responde al
+     * instante y los correos salen a continuación, en la misma petición.
+     *
+     * Con esto las citaciones llegan aunque no exista el cron de
+     * 'schedule:run'. Si el cron sí está configurado no hay conflicto: la cola
+     * de base de datos bloquea cada fila al tomarla (lockForUpdate), de modo
+     * que dos workers simultáneos nunca envían el mismo correo dos veces.
+     */
+    private function despacharCorreosEnSegundoPlano(): void
+    {
+        // Con 'sync' el correo ya se envió dentro de la petición.
+        if (config('queue.default') !== 'database') {
+            return;
+        }
+
+        app()->terminating(function () {
+            try {
+                Artisan::call('queue:work', [
+                    '--stop-when-empty' => true,
+                    '--max-time'        => 50,
+                    '--tries'           => 3,
+                    // Menor que retry_after (90) en config/queue.php: si no, la
+                    // cola reintentaría y el paciente recibiría duplicados.
+                    '--timeout'         => 45,
+                ]);
+            } catch (\Throwable $th) {
+                // El cron o la siguiente petición recogerán lo que quede.
+                \Log::warning('No se pudo vaciar la cola tras la petición', [
+                    'error' => $th->getMessage(),
+                ]);
+            }
+        });
+    }
+
+    /**
      * El reenvío masivo es exclusivo de Super Admin.
      *
      * No basta con ocultar el botón: los métodos públicos de un componente
@@ -376,6 +415,10 @@ class ConsultaGeneral extends Component
         ]);
 
         $this->reenvio_confirmar = false;
+
+        if ($encolados > 0) {
+            $this->despacharCorreosEnSegundoPlano();
+        }
 
         $detalle = [];
         if ($sinArchivo > 0) { $detalle[] = $sinArchivo.' sin certificado en disco'; }
@@ -587,6 +630,8 @@ class ConsultaGeneral extends Component
                         ->afterCommit()
                 ); //SE ENCOLA EL CORREO CON LOS DATOS DE LA CITA
             });
+
+            $this->despacharCorreosEnSegundoPlano();
 
             $this->cerrarModal();
             $this->resetExcept(['filestado','filserv','aseguradoras']);
