@@ -54,6 +54,7 @@ class DiagnosticarSolicitudesProcesando extends Command
 
         if ($auto) {
             $this->limpiarBloqueosCaducados();
+            $this->alertarColaAtascada();
         }
 
         $solicitudes = $this->consultar($auto);
@@ -337,6 +338,40 @@ class DiagnosticarSolicitudesProcesando extends Command
 
         if ($liberados > 0) {
             $this->info("Bloqueos de agendamiento caducados liberados: {$liberados}.");
+        }
+    }
+
+    /**
+     * Avisa en el log si las citaciones se están acumulando sin enviarse.
+     *
+     * El scheduler vacía la cola cada minuto. Si aun así quedan trabajos
+     * antiguos, el envío está roto (worker caído, SMTP rechazando) y hay
+     * pacientes agendados que no recibieron su citación: tiene que quedar
+     * rastro en vez de fallar en silencio.
+     */
+    private function alertarColaAtascada(): void
+    {
+        if (config('queue.default') !== 'database') {
+            return;
+        }
+
+        try {
+            $atascados = DB::table('jobs')
+                ->where('created_at', '<', now()->subMinutes(15)->getTimestamp())
+                ->count();
+            $fallidos = DB::table('failed_jobs')->count();
+        } catch (\Throwable $th) {
+            return;
+        }
+
+        if ($atascados > 0) {
+            Log::error('Citaciones encoladas sin enviar: revise el worker de colas', [
+                'jobs_atascados' => $atascados,
+                'jobs_fallidos'  => $fallidos,
+            ]);
+            $this->error("Hay {$atascados} correo(s) de citación sin enviar.");
+        } elseif ($fallidos > 0) {
+            Log::warning('Hay trabajos de cola fallidos', ['jobs_fallidos' => $fallidos]);
         }
     }
 
