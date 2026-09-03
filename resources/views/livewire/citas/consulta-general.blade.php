@@ -7,6 +7,56 @@
     @if ($modal)
         @include('livewire.citas.cita-agendada')
     @endif
+
+    {{-- Confirmación del reenvío masivo: se muestra el número exacto de
+         pacientes a los que se escribirá antes de enviar nada. --}}
+    @if ($reenvio_confirmar)
+        <div class="fixed z-20 inset-0 overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen px-4 text-center">
+                <div class="fixed inset-0 bg-gray-500 opacity-75"></div>
+                <div class="relative inline-block bg-white rounded-lg text-left shadow-xl transform sm:max-w-lg sm:w-full">
+                    <div class="px-6 pt-5 pb-4">
+                        <h3 class="text-lg font-medium text-gray-900 mb-3">Volver a notificar citas vigentes</h3>
+
+                        @if ($reenvio_total > 0)
+                            <p class="text-sm text-gray-700">
+                                Se reenviará el certificado de la cita a
+                                <span class="font-bold text-indigo-700">{{ $reenvio_total }}</span>
+                                paciente(s) con cita agendada cuya fecha aún no ha pasado.
+                            </p>
+                            <p class="text-xs text-gray-500 mt-2">
+                                Se respetan los filtros de especialidad, usuario, EPS y sede que tenga activos.
+                            </p>
+                        @else
+                            <p class="text-sm text-gray-700">
+                                No hay citas vigentes que notificar con los filtros actuales.
+                            </p>
+                        @endif
+
+                        @if ($reenvio_sin_fecha > 0)
+                            <p class="mt-3 text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded p-2">
+                                Nota: {{ $reenvio_sin_fecha }} cita(s) agendada(s) antes de que el sistema
+                                guardara la fecha no se pueden clasificar como vigentes y quedan fuera de este envío.
+                            </p>
+                        @endif
+                    </div>
+                    <div class="bg-gray-50 px-6 py-3 sm:flex sm:flex-row-reverse">
+                        @if ($reenvio_total > 0)
+                            <button type="button" wire:click="confirmarReenvio" wire:loading.attr="disabled"
+                                    class="inline-flex justify-center w-full sm:w-auto sm:ml-3 rounded-md px-4 py-2 bg-indigo-600 text-white font-medium shadow-sm hover:bg-indigo-700 disabled:opacity-50 text-sm">
+                                <span wire:loading.remove wire:target="confirmarReenvio">Sí, reenviar</span>
+                                <span wire:loading wire:target="confirmarReenvio">Enviando...</span>
+                            </button>
+                        @endif
+                        <button type="button" wire:click="cancelarReenvio"
+                                class="mt-3 sm:mt-0 inline-flex justify-center w-full sm:w-auto rounded-md border border-gray-300 px-4 py-2 bg-white text-gray-700 font-medium shadow-sm hover:text-gray-500 text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
     @if ($detalles)
         @livewire('citas.detalle-cita', ['solicitud_id' => $sol_id])
     @endif
@@ -64,6 +114,16 @@
                                 @endforeach
                             </select>
                         </div>
+                        @role('Super Admin')
+                        <div class="col-span-6 sm:col-span-1">
+                            <label class="block text-sm text-center font-medium text-gray-700">Citas vigentes</label>
+                            <button type="button" wire:click="prepararReenvio" wire:loading.attr="disabled"
+                                    class="mt-1 w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-2 px-3 rounded shadow-sm text-sm"
+                                    title="Reenvía la citación a los pacientes con cita agendada cuya fecha aún no ha pasado">
+                                Volver a notificar
+                            </button>
+                        </div>
+                        @endrole
                         <div class="col-span-6 sm:col-span-1">
                             <label for="filsede" class="block text-sm text-center font-medium text-gray-700">Filtrar por sede</label>
                             <select wire:model="filsede" id="filsede" autocomplete="off" class="mt-1 focus:ring-blue-500 focus:blue-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">

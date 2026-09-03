@@ -421,7 +421,7 @@ class DiagnosticarSolicitudesProcesando extends Command
                     public_path($ruta),
                     $sol->solicitud_mensaje_agendamiento
                 ));
-                $this->info("  ID {$sol->id}: reenviado a {$sol->email}");
+                $this->info("  ID {$sol->id}: encolado para {$sol->email}");
                 $enviados++;
             } catch (\Throwable $th) {
                 $this->error("  ID {$sol->id}: error al reenviar - ".$th->getMessage());
@@ -430,7 +430,7 @@ class DiagnosticarSolicitudesProcesando extends Command
         }
 
         $this->line('');
-        $this->info("  Correos reenviados: {$enviados}   Fallidos: {$fallidos}");
+        $this->info("  Correos encolados: {$enviados}   Fallidos: {$fallidos}");
     }
 
     /**

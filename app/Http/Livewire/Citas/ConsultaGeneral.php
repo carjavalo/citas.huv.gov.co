@@ -5,6 +5,7 @@ namespace App\Http\Livewire\Citas;
 use App\Mail\DatosCita;
 use App\Mail\CancelarCita;
 use App\Mail\ReagendarCita;
+use App\Mail\ReenvioCitacion;
 use App\Models\cancel_citas;
 use App\Models\solicitudes;
 use App\Models\User;
@@ -24,6 +25,9 @@ class ConsultaGeneral extends Component
 {
 
     public $modal = false;
+    public $reenvio_confirmar = false; //Panel de confirmación del reenvío masivo
+    public $reenvio_total = 0;         //Citas vigentes que se reenviarían
+    public $reenvio_sin_fecha = 0;     //Agendadas sin fecha guardada (quedan fuera)
     public $detalles = false; //Modal detalles
     public $rechazar = false; //Modal rechazar solicitud
     public $notificar_espera = false; //Modal notificar solicitud en espera
@@ -219,6 +223,172 @@ class ConsultaGeneral extends Component
             $this->sortDirection = 'asc';
         }
         $this->resetPage();
+    }
+
+    /**
+     * Citas agendadas VIGENTES (fecha de cita de hoy en adelante) a las que se
+     * les puede reenviar la citación.
+     *
+     * Respeta los filtros activos de la vista y la restricción por sede y
+     * pservicio del rol, para que nadie notifique fuera de su ámbito. El estado
+     * se fuerza a 'Agendado' sin importar el filtro de estado seleccionado.
+     *
+     * Solo entran las que tienen certificado: es el adjunto del correo.
+     */
+    private function queryReenvio()
+    {
+        $query = solicitudes::where('solicitudes.estado', 'Agendado')
+            ->whereNotNull('solicitudes.certfdo_cita')
+            ->whereNotNull('solicitudes.fecha_cita')
+            ->whereDate('solicitudes.fecha_cita', '>=', Carbon::now()->toDateString())
+            ->join('users', 'solicitudes.pacid', '=', 'users.id')
+            ->join('eps', 'users.eps', '=', 'eps.id')
+            ->join('servicios', 'solicitudes.espec', '=', 'servicios.servcod')
+            ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
+            ->join('sedes', 'pservicios.sede_id', '=', 'sedes.id');
+
+        if (!empty($this->filserv)) {
+            $query->where('servicios.servnomb', 'like', '%' . $this->filserv . '%');
+        }
+        if (!empty($this->filpaciente)) {
+            $query->where('users.ndocumento', 'like', '%' . $this->filpaciente . '%');
+        }
+        if (!empty($this->fileps)) {
+            $query->where('eps.id', $this->fileps);
+        }
+        if ($this->filsede !== '') {
+            $query->where('sedes.id', $this->filsede);
+        }
+
+        $user = Auth::user();
+        if (!$user->hasRole('Super Admin')) {
+            if ($user->sede_id) {
+                $query->where('sedes.id', $user->sede_id);
+            }
+            if ($user->pservicio_id) {
+                $query->where('pservicios.id', $user->pservicio_id);
+            }
+        }
+
+        return $query;
+    }
+
+    /**
+     * El reenvío masivo es exclusivo de Super Admin.
+     *
+     * No basta con ocultar el botón: los métodos públicos de un componente
+     * Livewire se pueden invocar desde el navegador, así que la restricción
+     * tiene que aplicarse también aquí.
+     */
+    private function autorizarReenvio(): void
+    {
+        $this->authorize('citas.consulta.agendar');
+        abort_unless(Auth::user()->hasRole('Super Admin'), 403);
+    }
+
+    /**
+     * Paso 1 del reenvío: cuenta a cuántos pacientes se les escribiría y pide
+     * confirmación. Nunca se envía nada sin pasar por aquí.
+     */
+    public function prepararReenvio()
+    {
+        $this->autorizarReenvio();
+
+        // distinct: 'servcod' está duplicado en servicios y el join multiplica
+        // filas; sin esto el mismo paciente recibiría el correo varias veces.
+        $this->reenvio_total = $this->queryReenvio()->distinct()->count('solicitudes.id');
+
+        // Las agendadas antes de que se guardara la fecha en base no se pueden
+        // clasificar como vigentes, así que quedan fuera: hay que decirlo.
+        $this->reenvio_sin_fecha = solicitudes::where('estado', 'Agendado')
+            ->whereNull('fecha_cita')
+            ->whereNotNull('certfdo_cita')
+            ->count();
+
+        $this->reenvio_confirmar = true;
+    }
+
+    public function cancelarReenvio()
+    {
+        $this->reenvio_confirmar = false;
+    }
+
+    /**
+     * Paso 2: encola el reenvío. Va por cola para no bloquear la petición ni
+     * caerse por timeout cuando son muchos correos.
+     */
+    public function confirmarReenvio()
+    {
+        $this->autorizarReenvio();
+
+        $solicitudes = $this->queryReenvio()
+            ->select([
+                'solicitudes.id',
+                'solicitudes.certfdo_cita',
+                'solicitudes.solicitud_mensaje_agendamiento',
+                'users.name',
+                'users.apellido1',
+                'users.apellido2',
+                'users.email',
+                'servicios.servnomb',
+            ])
+            ->get()
+            ->unique('id');
+
+        $encolados  = 0;
+        $sinArchivo = 0;
+        $sinCorreo  = 0;
+
+        foreach ($solicitudes as $sol) {
+            if (empty($sol->email)) {
+                $sinCorreo++;
+                continue;
+            }
+
+            $ruta = public_path($sol->certfdo_cita);
+            if (!file_exists($ruta)) {
+                $sinArchivo++;
+                continue;
+            }
+
+            try {
+                Mail::to($sol->email)->queue(new ReenvioCitacion(
+                    trim($sol->name . ' ' . $sol->apellido1 . ' ' . $sol->apellido2),
+                    $sol->servnomb,
+                    $ruta,
+                    $sol->solicitud_mensaje_agendamiento
+                ));
+                $encolados++;
+            } catch (\Throwable $th) {
+                \Log::error('No se pudo encolar el reenvío de citación', [
+                    'solicitud_id' => $sol->id,
+                    'error'        => $th->getMessage(),
+                ]);
+                $sinArchivo++;
+            }
+        }
+
+        \Log::info('Reenvío masivo de citaciones', [
+            'usuario'    => Auth::user()->id,
+            'encolados'  => $encolados,
+            'sin_archivo'=> $sinArchivo,
+            'sin_correo' => $sinCorreo,
+        ]);
+
+        $this->reenvio_confirmar = false;
+
+        $detalle = [];
+        if ($sinArchivo > 0) { $detalle[] = $sinArchivo.' sin certificado en disco'; }
+        if ($sinCorreo > 0)  { $detalle[] = $sinCorreo.' sin correo registrado'; }
+
+        if ($encolados === 0) {
+            $this->emit('alertError', 'No se reenvió ninguna citación.'
+                .($detalle ? ' ('.implode(', ', $detalle).')' : ''));
+            return;
+        }
+
+        $this->emit('alertSuccess', $encolados.' citación(es) en camino.'
+            .($detalle ? ' No se enviaron: '.implode(', ', $detalle).'.' : ''));
     }
 
     public function agendar($solicitud_id = null)
