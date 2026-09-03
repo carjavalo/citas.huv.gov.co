@@ -80,6 +80,12 @@
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 Eliminar seleccionados ({{ count($selectedSolicitudes) }})
                             </button>
+                            <button type="button" wire:click="prepararReenvio" wire:loading.attr="disabled"
+                                    class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-2 px-4 rounded flex items-center gap-2"
+                                    title="Reenvía la citación a los pacientes con cita agendada cuya fecha aún no ha pasado">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                Volver a notificar
+                            </button>
                         </div>
                         @endrole
                         <div class="col-span-6 sm:col-span-1">
@@ -114,16 +120,6 @@
                                 @endforeach
                             </select>
                         </div>
-                        @role('Super Admin')
-                        <div class="col-span-6 sm:col-span-1">
-                            <label class="block text-sm text-center font-medium text-gray-700">Citas vigentes</label>
-                            <button type="button" wire:click="prepararReenvio" wire:loading.attr="disabled"
-                                    class="mt-1 w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-2 px-3 rounded shadow-sm text-sm"
-                                    title="Reenvía la citación a los pacientes con cita agendada cuya fecha aún no ha pasado">
-                                Volver a notificar
-                            </button>
-                        </div>
-                        @endrole
                         <div class="col-span-6 sm:col-span-1">
                             <label for="filsede" class="block text-sm text-center font-medium text-gray-700">Filtrar por sede</label>
                             <select wire:model="filsede" id="filsede" autocomplete="off" class="mt-1 focus:ring-blue-500 focus:blue-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
