@@ -127,6 +127,9 @@
                 <i class="bi bi-clipboard-plus"></i> Asign. Consultorios
               </a>
               <a class="dropdown-item" href="#">
+                <i class="bi bi-camera-video"></i> Telemedicina
+              </a>
+              <a class="dropdown-item" href="#">
                 <i class="bi bi-bar-chart-line-fill"></i> Reportes
               </a>
             </div>
