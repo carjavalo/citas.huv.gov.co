@@ -132,7 +132,7 @@ class Especialidades extends Component
         // Obtener datos paginados para la tabla
         $especialidades = $this->consultaEspecialidades()->paginate(20);
 
-        $listaEps = eps::orderBy('nombre', 'asc')->get(['id', 'nombre']);
+        $listaEps = eps::activas()->orderBy('nombre', 'asc')->get(['id', 'nombre']);
         $epsNombre = optional($listaEps->firstWhere('id', $this->epsId))->nombre;
 
         return view('livewire.reporte.especialidades', [

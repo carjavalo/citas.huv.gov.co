@@ -48,7 +48,7 @@ class usuagendaController extends Controller
     public function create()
     {   
         $tipo_idenficacion = Tipo_identificacion::all();
-        $aseguradoras = eps::all();
+        $aseguradoras = eps::activas()->get();
        // $usuarioscre = User::orderBy('created_at', 'desc')->get();
     
 
@@ -113,7 +113,7 @@ class usuagendaController extends Controller
     public function show($id)
     {
         $tipo_idenficacion = Tipo_identificacion::all();
-        $aseguradoras = eps::all();
+        $aseguradoras = eps::activas()->get();
        $usuagenda = User::find($id);
         return view('modulo.AgendaCitas.usuarios.verusuariosagenda', compact('usuagenda','tipo_idenficacion','aseguradoras'));
     }

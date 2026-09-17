@@ -181,7 +181,7 @@ class ConsultaGeneral extends Component
         
         // Cachear EPS
         if ($this->aseguradoresCache === null) {
-            $this->aseguradoresCache = eps::orderBy('nombre', 'asc')->get();
+            $this->aseguradoresCache = eps::activas()->orderBy('nombre', 'asc')->get();
         }
         $aseguradoras = $this->aseguradoresCache;
         

@@ -11,7 +11,7 @@ class Registro extends Component
     public function render()
     {
         return view('livewire.usuarios.registro', [
-            'aseguradoras' => eps::where('estado','=',true)->get(),
+            'aseguradoras' => eps::activas()->get(),
             'tipo_idenficacion' => tipo_identificacion::all(),
         ])->layout('layouts.guest');
     }

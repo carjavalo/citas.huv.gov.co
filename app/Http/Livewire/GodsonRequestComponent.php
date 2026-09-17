@@ -140,7 +140,7 @@ class GodsonRequestComponent extends Component
         if (!$this->user->linkedHospital)
             return $this->emit('alertError', 'Usted no está vinculado con un Hospital');
         $this->reset(['solicitud', 'paciente']);
-        $this->eps = eps::where('estado', true)->orderBy('nombre', 'asc')->get()->toArray();
+        $this->eps = eps::activas()->orderBy('nombre', 'asc')->get()->toArray();
         //$this->especialidades = servicios::where('servnomb', 'ALTO RIESGO OBSTETRICO')->orderBy('servnomb', 'asc')->get()->toArray();
         $this->especialidades = servicios::orderBy('servnomb', 'asc')->get()->toArray();
         $this->tiposIdentificacion = tipo_identificacion::orderBy('nombre', 'asc')->get()->toArray();

@@ -158,7 +158,14 @@ class Consulta extends Component
         $this->email                    = $usuario->email; 
         $this->usu_rol                  = optional($usuario->roles->first())->name ?? 'Sin rol';
         $this->usu_eps                  = $usuario->eps;
-        $this->aseguradoras             = eps::all();
+        // Solo eps activas; se conserva la eps actual del usuario aunque esté inactiva
+        // para no perder el valor ya asignado al guardar.
+        $this->aseguradoras             = eps::activas()
+                                            ->when($usuario->eps, function ($query) use ($usuario) {
+                                                $query->orWhere('id','=',$usuario->eps);
+                                            })
+                                            ->orderBy('nombre','asc')
+                                            ->get();
         $this->tipos_identificacion     = tipo_identificacion::all();
         $this->tdoc                     = $usuario->tdocumento;
         $this->ndoc                     = $usuario->ndocumento;
