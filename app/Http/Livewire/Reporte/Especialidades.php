@@ -4,6 +4,7 @@ namespace App\Http\Livewire\Reporte;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use App\Models\eps;
 use App\Models\servicios;
 use App\Models\solicitudes;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ class Especialidades extends Component
 
     public $fechaDesde;
     public $fechaHasta;
+    public $epsId = '';
     public $totalAgendado = 0;
     public $totalEspera = 0;
     public $totalPendiente = 0;
@@ -31,7 +33,7 @@ class Especialidades extends Component
     private function aplicarFiltrosVisibilidad($query)
     {
         $user = Auth::user();
-        
+
         if (!$user->hasRole('Super Admin')) {
             if ($user->sede_id) {
                 $query->where('pservicios.sede_id', $user->sede_id);
@@ -40,8 +42,47 @@ class Especialidades extends Component
                 $query->where('servicios.id_pservicios', $user->pservicio_id);
             }
         }
-        
+
         return $query;
+    }
+
+    /**
+     * Consulta agrupada por especialidad con los filtros de fecha, EPS y visibilidad.
+     */
+    private function consultaEspecialidades()
+    {
+        $fechaDesde = $this->fechaDesde;
+        $fechaHasta = $this->fechaHasta;
+        $epsId = $this->epsId;
+
+        $query = servicios::select(
+                'servicios.servcod',
+                'servicios.servnomb',
+                DB::raw('COALESCE(SUM(CASE WHEN solicitudes.estado = "Agendado" THEN 1 ELSE 0 END), 0) as agendadas'),
+                DB::raw('COALESCE(SUM(CASE WHEN solicitudes.estado = "Espera" THEN 1 ELSE 0 END), 0) as en_espera'),
+                DB::raw('COALESCE(SUM(CASE WHEN solicitudes.estado = "Pendiente" THEN 1 ELSE 0 END), 0) as pendientes'),
+                DB::raw('COALESCE(SUM(CASE WHEN solicitudes.estado = "Rechazado" THEN 1 ELSE 0 END), 0) as rechazadas')
+            )
+            ->leftJoin('solicitudes', function($join) use ($fechaDesde, $fechaHasta, $epsId) {
+                $join->on('servicios.servcod', '=', 'solicitudes.espec')
+                     ->whereDate('solicitudes.created_at', '>=', $fechaDesde)
+                     ->whereDate('solicitudes.created_at', '<=', $fechaHasta);
+
+                // El filtro de EPS va dentro del join para conservar las especialidades sin solicitudes
+                if (!empty($epsId)) {
+                    $join->whereIn('solicitudes.pacid', function($sub) use ($epsId) {
+                        $sub->select('id')->from('users')->where('eps', $epsId);
+                    });
+                }
+            })
+            ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
+            ->where('servicios.estado', 1);
+
+        // Aplicar filtros de visibilidad según rol
+        $this->aplicarFiltrosVisibilidad($query);
+
+        return $query->groupBy('servicios.servcod', 'servicios.servnomb')
+            ->orderBy('servicios.servnomb');
     }
 
     public function mount()
@@ -63,33 +104,16 @@ class Especialidades extends Component
         $this->cargarTotales();
     }
 
+    public function updatedEpsId()
+    {
+        $this->resetPage();
+        $this->cargarTotales();
+    }
+
     public function cargarTotales()
     {
-        $fechaDesde = $this->fechaDesde;
-        $fechaHasta = $this->fechaHasta;
-        
         // Obtener datos para gráficos (sin paginación)
-        $query = servicios::select(
-                'servicios.servcod',
-                'servicios.servnomb',
-                DB::raw('COALESCE(SUM(CASE WHEN solicitudes.estado = "Agendado" THEN 1 ELSE 0 END), 0) as agendadas'),
-                DB::raw('COALESCE(SUM(CASE WHEN solicitudes.estado = "Espera" THEN 1 ELSE 0 END), 0) as en_espera'),
-                DB::raw('COALESCE(SUM(CASE WHEN solicitudes.estado = "Pendiente" THEN 1 ELSE 0 END), 0) as pendientes'),
-                DB::raw('COALESCE(SUM(CASE WHEN solicitudes.estado = "Rechazado" THEN 1 ELSE 0 END), 0) as rechazadas')
-            )
-            ->leftJoin('solicitudes', function($join) use ($fechaDesde, $fechaHasta) {
-                $join->on('servicios.servcod', '=', 'solicitudes.espec')
-                     ->whereDate('solicitudes.created_at', '>=', $fechaDesde)
-                     ->whereDate('solicitudes.created_at', '<=', $fechaHasta);
-            })
-            ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
-            ->where('servicios.estado', 1);
-        
-        // Aplicar filtros de visibilidad según rol
-        $this->aplicarFiltrosVisibilidad($query);
-        
-        $this->datosGraficos = $query->groupBy('servicios.servcod', 'servicios.servnomb')
-            ->orderBy('servicios.servnomb')
+        $this->datosGraficos = $this->consultaEspecialidades()
             ->get()
             ->toArray();
 
@@ -102,38 +126,19 @@ class Especialidades extends Component
 
     public function render()
     {
-        $fechaDesde = $this->fechaDesde;
-        $fechaHasta = $this->fechaHasta;
-        
         // Actualizar totales en cada render
         $this->cargarTotales();
-        
+
         // Obtener datos paginados para la tabla
-        $query = servicios::select(
-                'servicios.servcod',
-                'servicios.servnomb',
-                DB::raw('COALESCE(SUM(CASE WHEN solicitudes.estado = "Agendado" THEN 1 ELSE 0 END), 0) as agendadas'),
-                DB::raw('COALESCE(SUM(CASE WHEN solicitudes.estado = "Espera" THEN 1 ELSE 0 END), 0) as en_espera'),
-                DB::raw('COALESCE(SUM(CASE WHEN solicitudes.estado = "Pendiente" THEN 1 ELSE 0 END), 0) as pendientes'),
-                DB::raw('COALESCE(SUM(CASE WHEN solicitudes.estado = "Rechazado" THEN 1 ELSE 0 END), 0) as rechazadas')
-            )
-            ->leftJoin('solicitudes', function($join) use ($fechaDesde, $fechaHasta) {
-                $join->on('servicios.servcod', '=', 'solicitudes.espec')
-                     ->whereDate('solicitudes.created_at', '>=', $fechaDesde)
-                     ->whereDate('solicitudes.created_at', '<=', $fechaHasta);
-            })
-            ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
-            ->where('servicios.estado', 1);
-        
-        // Aplicar filtros de visibilidad según rol
-        $this->aplicarFiltrosVisibilidad($query);
-        
-        $especialidades = $query->groupBy('servicios.servcod', 'servicios.servnomb')
-            ->orderBy('servicios.servnomb')
-            ->paginate(20);
+        $especialidades = $this->consultaEspecialidades()->paginate(20);
+
+        $listaEps = eps::orderBy('nombre', 'asc')->get(['id', 'nombre']);
+        $epsNombre = optional($listaEps->firstWhere('id', $this->epsId))->nombre;
 
         return view('livewire.reporte.especialidades', [
-            'especialidades' => $especialidades
+            'especialidades' => $especialidades,
+            'listaEps' => $listaEps,
+            'epsNombre' => $epsNombre,
         ]);
     }
 
@@ -141,7 +146,7 @@ class Especialidades extends Component
     {
         $fecha = Carbon::now()->format('Y-m-d_H-i');
         return Excel::download(
-            new EspecialidadesExport($this->fechaDesde, $this->fechaHasta), 
+            new EspecialidadesExport($this->fechaDesde, $this->fechaHasta, $this->epsId),
             "reporte_especialidades_{$fecha}.xlsx"
         );
     }

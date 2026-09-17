@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Models\eps;
 use App\Models\servicios;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -28,15 +29,17 @@ class EspecialidadesExport implements FromCollection, WithHeadings, WithColumnWi
 {
     private $fechaDesde;
     private $fechaHasta;
+    private $epsId;
     private $totalAgendado = 0;
     private $totalEspera = 0;
     private $totalPendiente = 0;
     private $totalRechazado = 0;
 
-    public function __construct($fechaDesde, $fechaHasta)
+    public function __construct($fechaDesde, $fechaHasta, $epsId = null)
     {
         $this->fechaDesde = $fechaDesde;
         $this->fechaHasta = $fechaHasta;
+        $this->epsId = $epsId;
     }
 
     /**
@@ -73,6 +76,13 @@ class EspecialidadesExport implements FromCollection, WithHeadings, WithColumnWi
                 $join->on('servicios.servcod', '=', 'solicitudes.espec')
                      ->whereDate('solicitudes.created_at', '>=', $this->fechaDesde)
                      ->whereDate('solicitudes.created_at', '<=', $this->fechaHasta);
+
+                // El filtro de EPS va dentro del join para conservar las especialidades sin solicitudes
+                if (!empty($this->epsId)) {
+                    $join->whereIn('solicitudes.pacid', function($sub) {
+                        $sub->select('id')->from('users')->where('eps', $this->epsId);
+                    });
+                }
             })
             ->join('pservicios', 'servicios.id_pservicios', '=', 'pservicios.id')
             ->where('servicios.estado', 1);
@@ -195,7 +205,9 @@ class EspecialidadesExport implements FromCollection, WithHeadings, WithColumnWi
                 // Título principal
                 $sheet->setCellValue('A1', 'REPORTE DE ESPECIALIDADES');
                 $sheet->setCellValue('A2', 'Período: ' . \Carbon\Carbon::parse($this->fechaDesde)->format('d/m/Y') . ' - ' . \Carbon\Carbon::parse($this->fechaHasta)->format('d/m/Y'));
-                
+                $nombreEps = !empty($this->epsId) ? optional(eps::find($this->epsId))->nombre : null;
+                $sheet->setCellValue('A3', 'EPS: ' . ($nombreEps ?? 'Todas las EPS'));
+
                 // Sección de Distribución por Estado
                 $sheet->setCellValue('A4', 'DISTRIBUCIÓN POR ESTADO');
                 $sheet->setCellValue('A5', 'Estado');
@@ -228,7 +240,7 @@ class EspecialidadesExport implements FromCollection, WithHeadings, WithColumnWi
                 $sheet->getStyle('A1')->applyFromArray([
                     'font' => ['bold' => true, 'size' => 16, 'color' => ['rgb' => '2c4370']],
                 ]);
-                $sheet->getStyle('A2')->applyFromArray([
+                $sheet->getStyle('A2:A3')->applyFromArray([
                     'font' => ['italic' => true, 'size' => 10, 'color' => ['rgb' => '666666']],
                 ]);
                 
@@ -275,6 +287,7 @@ class EspecialidadesExport implements FromCollection, WithHeadings, WithColumnWi
                 // Merge cells para títulos
                 $sheet->mergeCells('A1:G1');
                 $sheet->mergeCells('A2:G2');
+                $sheet->mergeCells('A3:G3');
                 $sheet->mergeCells('A4:C4');
             },
         ];

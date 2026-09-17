@@ -7,7 +7,19 @@
                     <h1 class="text-base font-bold text-gray-800">Reporte de Especialidades</h1>
                     <span class="text-indigo-600 text-xs font-medium">
                         {{ \Carbon\Carbon::parse($fechaDesde)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($fechaHasta)->format('d/m/Y') }}
+                        @if($epsNombre)
+                            · {{ $epsNombre }}
+                        @endif
                     </span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="epsId" class="text-xs text-gray-600">EPS:</label>
+                    <select id="epsId" wire:model="epsId" class="border-gray-300 rounded text-xs py-1 pl-2 pr-7 w-56 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="">Todas las EPS</option>
+                        @foreach($listaEps as $itemEps)
+                            <option value="{{ $itemEps->id }}">{{ $itemEps->nombre }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="flex items-center gap-2">
                     <label class="text-xs text-gray-600">Desde:</label>
