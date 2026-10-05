@@ -94,6 +94,16 @@
                             <label for="numero_doucumento" class="block text-sm font-medium text-gray-700">Número de documento</label>
                             <input wire:model="ndoc" type="text" id="numero_documento" autocomplete="off" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
                         </div>
+                        <div class="col-span-6 sm:col-span-3">
+                            <label for="telefono1" class="block text-sm font-medium text-gray-700">Teléfono 1<span class="text-red-500">*</span></label>
+                            <input wire:model.defer="telefono1" type="text" id="telefono1" inputmode="numeric" autocomplete="off" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                            @error('telefono1') <span class="mt-1 inline-block px-2 text-xs text-red-600">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="col-span-6 sm:col-span-3">
+                            <label for="telefono2" class="block text-sm font-medium text-gray-700">Teléfono 2</label>
+                            <input wire:model.defer="telefono2" type="text" id="telefono2" inputmode="numeric" autocomplete="off" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                            @error('telefono2') <span class="mt-1 inline-block px-2 text-xs text-red-600">{{ $message }}</span> @enderror
+                        </div>
 
                         {{-- Sección exclusiva Super Admin: restablecer contraseña --}}
                         @if(auth()->user()->hasRole('Super Admin'))

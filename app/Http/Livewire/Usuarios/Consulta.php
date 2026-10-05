@@ -19,7 +19,7 @@ class Consulta extends Component
     use WithPagination;
     
     public $modal = false; //Encargada de la modal
-    public $usu_id, $nombres, $apellido1, $apellido2, $email, $usu_rol, $usu_eps, $tdoc, $ndoc; //Datos del usuario para editar
+    public $usu_id, $nombres, $apellido1, $apellido2, $email, $usu_rol, $usu_eps, $tdoc, $ndoc, $telefono1, $telefono2; //Datos del usuario para editar
     public $aseguradoras; //Almacena las eps
     public $tipos_identificacion;
     public $apellidos1 = '';
@@ -146,7 +146,7 @@ class Consulta extends Component
 
     public function editar($id) //Esta función inicializa variables para mostrar en la modal
     {
-        $usuario                        = User::where('id','=',$id)->first(['id','name','apellido1','apellido2','email','eps','tdocumento','ndocumento','sede_id','pservicio_id','email_verified_at']);
+        $usuario                        = User::where('id','=',$id)->first(['id','name','apellido1','apellido2','email','eps','tdocumento','ndocumento','telefono1','telefono2','sede_id','pservicio_id','email_verified_at']);
         if (!$usuario) {
             $this->emit('alertError', 'No se encontró el usuario.');
             return;
@@ -169,6 +169,8 @@ class Consulta extends Component
         $this->tipos_identificacion     = tipo_identificacion::all();
         $this->tdoc                     = $usuario->tdocumento;
         $this->ndoc                     = $usuario->ndocumento;
+        $this->telefono1                = $usuario->telefono1;
+        $this->telefono2                = $usuario->telefono2;
         $this->correo_verificado        = !is_null($usuario->email_verified_at);
         
         // Cargar sedes
@@ -217,7 +219,15 @@ class Consulta extends Component
             'nombres'      => 'required',
             'apellido1' => 'required',
             'email'     => 'required|email',
-            'usu_rol'       => 'required'
+            'usu_rol'       => 'required',
+            'telefono1' => 'required|numeric|digits_between:7,12',
+            'telefono2' => 'nullable|numeric|digits_between:7,12',
+        ], [
+            'telefono1.required'        => 'El teléfono es obligatorio.',
+            'telefono1.numeric'         => 'El teléfono solo puede contener números.',
+            'telefono1.digits_between'  => 'Comprueba que el número sea válido.',
+            'telefono2.numeric'         => 'El teléfono solo puede contener números.',
+            'telefono2.digits_between'  => 'Comprueba que el número sea válido.',
         ]);
 
         if (auth()->user()->hasRole('Super Admin') && filled($this->nueva_password)) {
@@ -255,6 +265,8 @@ class Consulta extends Component
                     'eps'           => $this->usu_eps,
                     'tdocumento'    => $this->tdoc,
                     'ndocumento'    => $this->ndoc,
+                    'telefono1'     => trim($this->telefono1),
+                    'telefono2'     => filled($this->telefono2) ? trim($this->telefono2) : null,
                     'sede_id'       => $sedeId,
                     'pservicio_id'  => $pservicioId,
                 ]);
