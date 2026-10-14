@@ -68,7 +68,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/configuracion/pservicios/consulta', ConsultarPservicios::class)->name('configuracion.pservicios');
     Route::get('/configuracion/especialidades/consulta', ConsultarEspecialidades::class)->name('configuracion.especialidades');
     Route::get('/configuracion/campanas/consulta', ConsultarCampanas::class)->name('configuracion.campanas');
-    Route::get('/configuracion/mensajes-masivos/consulta', ConsultarMensajesMasivos::class)->name('configuracion.mensajes-masivos');
+    Route::get('/configuracion/mensajes-masivos/consulta', ConsultarMensajesMasivos::class)->name('configuracion.mensajes-masivos')->middleware('role:Super Admin');
     Route::get('/configuracion/roles/consulta',ConsultarRoles::class)->name('configuracion.roles');
     Route::get('/configuracion/mantenimiento',  \App\Http\Livewire\Configuracion\MaintenanceMode::class)->name('configuracion.mantenimiento')->middleware('role:Super Admin');
     Route::get('/operando/sql', OperandoConsulta::class)->name('operando.sql');

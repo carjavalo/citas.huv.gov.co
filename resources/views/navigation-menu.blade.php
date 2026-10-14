@@ -73,10 +73,12 @@
                                 <a href="{{ route('configuracion.campanas') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('Campañas') }}
                                 </a>
+                                @endunlessrole
+                                @role('Super Admin')
                                 <a href="{{ route('configuracion.mensajes-masivos') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('Mensajes Masivos') }}
                                 </a>
-                                @endunlessrole
+                                @endrole
                                 @role('Super Admin')
                                 <div class="border-t border-gray-200 my-1"></div>
                                 <a href="{{ route('configuracion.roles') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
