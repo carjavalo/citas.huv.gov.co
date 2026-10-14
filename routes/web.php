@@ -19,6 +19,7 @@ use App\Http\Livewire\Sedes\Consulta as ConsultarSedes;
 use App\Http\Livewire\Pservicios\Consulta as ConsultarPservicios;
 use App\Http\Livewire\Especialidades\Consulta as ConsultarEspecialidades;
 use App\Http\Livewire\Campanas\Consulta as ConsultarCampanas;
+use App\Http\Livewire\MensajesMasivos\Consulta as ConsultarMensajesMasivos;
 use App\Http\Livewire\Roles\Consulta as ConsultarRoles;
 use App\Http\Livewire\Operando\Consulta as OperandoConsulta;
 use Illuminate\Support\Facades\Auth;
@@ -67,7 +68,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/configuracion/pservicios/consulta', ConsultarPservicios::class)->name('configuracion.pservicios');
     Route::get('/configuracion/especialidades/consulta', ConsultarEspecialidades::class)->name('configuracion.especialidades');
     Route::get('/configuracion/campanas/consulta', ConsultarCampanas::class)->name('configuracion.campanas');
-    Route::get('/configuracion/roles/consulta', ConsultarRoles::class)->name('configuracion.roles');
+    Route::get('/configuracion/mensajes-masivos/consulta', ConsultarMensajesMasivos::class)->name('configuracion.mensajes-masivos');
+    Route::get('/configuracion/roles/consulta',ConsultarRoles::class)->name('configuracion.roles');
     Route::get('/configuracion/mantenimiento',  \App\Http\Livewire\Configuracion\MaintenanceMode::class)->name('configuracion.mantenimiento')->middleware('role:Super Admin');
     Route::get('/operando/sql', OperandoConsulta::class)->name('operando.sql');
     Route::get('reporte/solicitudes/general', Procesado::class)->name('reporte.solicitudes.procesado');  

@@ -97,6 +97,12 @@
                                 N. Documento
                             </th>
                             <th scope="col" class="px-6 py-3">
+                                Teléfono 1
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                Teléfono 2
+                            </th>
+                            <th scope="col" class="px-6 py-3">
                                 Codigo Eps
                             </th>
                             <th scope="col" class="px-6 py-3">
@@ -150,6 +156,12 @@
                             </td>
                             <td class="px-6 py-4">
                                        {{$solicitude->paciente_ndocumento}}
+                            </td>
+                            <td class="px-6 py-4">
+                                       {{$solicitude->paciente_telefono1}}
+                            </td>
+                            <td class="px-6 py-4">
+                                       {{$solicitude->paciente_telefono2}}
                             </td>
                             <td class="px-6 py-4">
                                         {{$solicitude->codigo_eps}}

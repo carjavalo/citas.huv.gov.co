@@ -59,6 +59,8 @@ class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCust
             'APELLIDO',
             'APELLIDO',
             'N IDENTIFICACION',
+            'TELEFONO 1',
+            'TELEFONO 2',
             'CODIGO EPS',
             'EPS',
             
@@ -77,8 +79,10 @@ class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCust
             'H' => 25,
             'I' => 25,
             'J' => 18,
-            'K' => 12,
-            'L' => 35,
+            'K' => 15,
+            'L' => 15,
+            'M' => 12,
+            'N' => 35,
                         
         ];
     }
@@ -163,6 +167,8 @@ class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCust
             DB::raw('users.apellido1 as paciente_apellido1'),
             DB::raw('users.apellido2 as paciente_apellido2'),
             DB::raw('users.ndocumento as paciente_ndocumento'),
+            DB::raw('users.telefono1 as paciente_telefono1'),
+            DB::raw('users.telefono2 as paciente_telefono2'),
             DB::raw('eps.id as codigo_eps'),
             DB::raw('eps.nombre as eps'),                                                                                
         ])->orderBy('solicitudes.created_at','desc');
@@ -183,6 +189,8 @@ class CitasExport implements FromQuery, WithHeadings, WithColumnWidths, WithCust
             $row->paciente_apellido1,
             $row->paciente_apellido2,
             $row->paciente_ndocumento,
+            $row->paciente_telefono1,
+            $row->paciente_telefono2,
             $row->codigo_eps,
             $row->eps,
         ];

@@ -144,6 +144,8 @@ public function render()
                 DB::raw('users.apellido1 as paciente_apellido1'),
                 DB::raw('users.apellido2 as paciente_apellido2'),
                 DB::raw('users.ndocumento as paciente_ndocumento'),
+                DB::raw('users.telefono1 as paciente_telefono1'),
+                DB::raw('users.telefono2 as paciente_telefono2'),
                 DB::raw('servicios.servnomb as servicio_nombre'),
                 DB::raw('eps.id as codigo_eps'),
                 DB::raw('eps.nombre as eps'),

@@ -73,6 +73,9 @@
                                 <a href="{{ route('configuracion.campanas') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('Campañas') }}
                                 </a>
+                                <a href="{{ route('configuracion.mensajes-masivos') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
+                                    {{ __('Mensajes Masivos') }}
+                                </a>
                                 @endunlessrole
                                 @role('Super Admin')
                                 <div class="border-t border-gray-200 my-1"></div>
