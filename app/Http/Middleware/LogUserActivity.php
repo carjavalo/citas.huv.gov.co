@@ -34,6 +34,7 @@ class LogUserActivity
                 '_debugbar',
                 'sanctum/csrf-cookie',
                 'api/',
+                'citacion/', // confirmación pública de citas (el token del enlace no debe guardarse)
             ];
 
             foreach ($ignoredPaths as $ignored) {

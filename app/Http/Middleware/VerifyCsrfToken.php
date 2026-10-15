@@ -12,6 +12,9 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        //
+        // Confirmación pública de Mensajes Masivos: el token de 48 caracteres del
+        // enlace ya es el secreto; así el paciente no ve "419 Page Expired" si
+        // responde horas después de abrir el correo.
+        'citacion/*',
     ];
 }

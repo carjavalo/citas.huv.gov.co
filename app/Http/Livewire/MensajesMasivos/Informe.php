@@ -70,13 +70,13 @@ class Informe extends Component
     {
         // Los totales respetan todos los filtros menos el de estado, para comparar respuestas.
         $totales = CitacionMasiva::query()
-            ->filtrar(array_merge($this->filtros(), ['estado' => '']))
+            ->filtrar(array_merge($this->filtros(), ['estado' => '', 'incluirFallidos' => true]))
             ->selectRaw('estado, count(*) as total')
             ->groupBy('estado')
             ->pluck('total', 'estado');
 
         $lotes = CitacionMasiva::query()
-            ->selectRaw('lote, archivo, min(created_at) as enviado, count(*) as total')
+            ->selectRaw("lote, archivo, min(enviado_at) as enviado, sum(case when estado <> 'fallido' then 1 else 0 end) as total")
             ->groupBy('lote', 'archivo')
             ->orderByDesc('enviado')
             ->limit(50)
@@ -85,13 +85,15 @@ class Informe extends Component
         return view('livewire.mensajes-masivos.informe', [
             'citaciones' => CitacionMasiva::query()
                 ->filtrar($this->filtros())
-                ->orderByDesc('created_at')
+                ->orderByDesc('enviado_at')
                 ->orderBy('paciente')
+                ->orderBy('id')
                 ->paginate(50),
-            'totalEnviadas'  => $totales->sum(),
+            'totalEnviadas'  => $totales->sum() - ($totales[CitacionMasiva::FALLIDO] ?? 0),
             'totalAsistira'  => $totales[CitacionMasiva::ASISTIRA] ?? 0,
             'totalNoAsistira' => $totales[CitacionMasiva::NO_ASISTIRA] ?? 0,
             'totalPendiente' => $totales[CitacionMasiva::PENDIENTE] ?? 0,
+            'totalFallido'   => $totales[CitacionMasiva::FALLIDO] ?? 0,
             'lotes'          => $lotes,
             'sedes'          => Consulta::SEDES,
         ]);

@@ -59,5 +59,16 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
         });
+
+        // Confirmación pública de citas: límite por enlace, y uno amplio por IP
+        // porque muchos pacientes pueden salir por la misma IP (wifi, operador).
+        RateLimiter::for('citacion', function (Request $request) {
+            return [
+                Limit::perMinute(20)->by('citacion|' . $request->route('token') . '|' . $request->ip()),
+                Limit::perMinute(300)->by('citacion|' . $request->ip()),
+                // No depende de la IP (que se puede falsear con X-Forwarded-For).
+                Limit::perMinute(60)->by('citacion-token|' . $request->route('token')),
+            ];
+        });
     }
 }

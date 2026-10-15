@@ -59,6 +59,13 @@
             </button>
         </div>
 
+        @if ($totalFallido)
+            <button type="button" wire:click="filtrarEstado('fallido')" class="w-full text-left mb-6 bg-red-50 border border-red-200 text-red-800 rounded-xl p-3 flex items-center text-sm hover:bg-red-100">
+                <span class="material-icons mr-2">mail_lock</span>
+                {{ $totalFallido }} correo(s) no se pudieron entregar y no cuentan como enviados. Clic para verlos.
+            </button>
+        @endif
+
         {{-- Filtros --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
@@ -124,7 +131,7 @@
                     <tbody class="divide-y divide-gray-100 bg-white">
                         @forelse ($citaciones as $c)
                             <tr wire:key="citacion-{{ $c->id }}" class="hover:bg-blue-50/40">
-                                <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ $c->created_at->format('d/m/Y h:i A') }}</td>
+                                <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ ($c->enviado_at ?? $c->created_at)->format('d/m/Y h:i A') }}</td>
                                 <td class="px-4 py-3 font-medium text-gray-800">{{ $c->paciente }}</td>
                                 <td class="px-4 py-3 font-mono text-gray-800">{{ $c->documento }}</td>
                                 <td class="px-4 py-3 text-gray-600">{{ $c->email }}</td>
@@ -140,6 +147,8 @@
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Confirmó asistencia</span>
                                     @elseif ($c->estado === 'no_asistira')
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">No asistirá</span>
+                                    @elseif ($c->estado === 'fallido')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">Correo no entregado</span>
                                     @else
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Sin responder</span>
                                     @endif

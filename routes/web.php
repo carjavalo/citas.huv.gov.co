@@ -47,9 +47,9 @@ Route::get('/registro', UsuariosRegistro::class)->name('registro');
 
 // Público: el paciente llega desde el botón "Ir a confirmar" del correo de Mensajes Masivos.
 Route::get('/citacion/{token}', [CitacionConfirmacionController::class, 'mostrar'])
-    ->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:30,1')->name('citacion.confirmar');
+    ->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:citacion')->name('citacion.confirmar');
 Route::post('/citacion/{token}', [CitacionConfirmacionController::class, 'responder'])
-    ->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:10,1')->name('citacion.responder');
+    ->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:citacion')->name('citacion.responder');
 
 // Ruta para capturar accesos directos a /Documentos/* (URLs antiguas o directas)
 Route::get('/Documentos/{path}', [DocumentoController::class, 'verDirecto'])->where('path', '.*')->middleware(['auth:sanctum', 'verified']);

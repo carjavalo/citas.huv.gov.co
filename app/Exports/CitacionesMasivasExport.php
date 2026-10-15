@@ -29,7 +29,7 @@ class CitacionesMasivasExport extends StringValueBinder implements FromQuery, Wi
 
     public function query()
     {
-        return CitacionMasiva::query()->filtrar($this->filtros)->orderByDesc('created_at')->orderBy('paciente');
+        return CitacionMasiva::query()->filtrar($this->filtros)->orderByDesc('enviado_at')->orderBy('paciente')->orderBy('id');
     }
 
     public function headings(): array
@@ -54,7 +54,7 @@ class CitacionesMasivasExport extends StringValueBinder implements FromQuery, Wi
     public function map($citacion): array
     {
         return [
-            $citacion->created_at->format('d/m/Y h:i A'),
+            ($citacion->enviado_at ?? $citacion->created_at)->format('d/m/Y h:i A'),
             $citacion->archivo,
             $citacion->paciente,
             $citacion->documento,

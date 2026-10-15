@@ -84,7 +84,19 @@
                     @endforeach
                 </div>
                 <p class="mt-2">Dirección que se incluirá en el mensaje: <strong class="text-slate-700">{{ $sedes[$sede]['direccion'] ?? '' }}</strong></p>
+                <p class="mt-1">Enlace del botón "Ir a confirmar": <strong class="text-slate-700">{{ $urlConfirmacion }}</strong></p>
             </div>
+
+            @if ($enlaceSoloRedInterna)
+                <div class="mt-4 bg-amber-50 border border-amber-300 text-amber-800 rounded-lg p-3 flex items-start text-sm">
+                    <span class="material-icons mr-2">wifi_off</span>
+                    <p>
+                        <strong>El botón "Ir a confirmar" usa una dirección interna del hospital ({{ $urlConfirmacion }}).</strong>
+                        Los pacientes que abran el correo desde su casa o con datos móviles no podrán confirmar.
+                        Configure <code class="bg-amber-100 px-1 rounded">CITACIONES_URL</code> con el dominio público del aplicativo.
+                    </p>
+                </div>
+            @endif
         </div>
 
         @if (count($columnasFaltantes))
@@ -115,6 +127,9 @@
                     @endif
                     @if ($resultadoEnvio['fallidos'])
                         <p>{{ $resultadoEnvio['fallidos'] }} mensaje(s) no se pudieron encolar. Revise el log del sistema.</p>
+                    @endif
+                    @if ($resultadoEnvio['duplicados'] ?? 0)
+                        <p>{{ $resultadoEnvio['duplicados'] }} fila(s) repetida(s) en el archivo (mismo paciente y misma cita) no se enviaron de nuevo.</p>
                     @endif
 
                     @if (count($resultadoEnvio['confirmados'] ?? []))
@@ -344,6 +359,12 @@
                         <strong>{{ $sedes[$sede]['nombre'] ?? '' }}</strong>:
                     </p>
                     <p class="text-xs text-gray-500 mt-2 bg-slate-50 border border-slate-200 rounded p-2">{{ $sedes[$sede]['direccion'] ?? '' }}</p>
+
+                    @if ($enlaceSoloRedInterna)
+                        <p class="text-xs text-amber-800 mt-2 bg-amber-50 border border-amber-300 rounded p-2">
+                            <strong>Atención:</strong> el botón "Ir a confirmar" lleva a {{ $urlConfirmacion }}, que solo abre dentro de la red del hospital.
+                        </p>
+                    @endif
 
                     <p class="text-sm font-semibold text-gray-700 mt-4">Pacientes a los que se les confirmará la cita:</p>
                     @include('livewire.mensajes-masivos.lista-pacientes', ['pacientes' => $pacientesPorEnviar])

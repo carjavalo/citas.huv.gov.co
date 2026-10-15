@@ -249,6 +249,7 @@ class Consulta extends Component
 
         $enviados = 0;
         $fallidos = 0;
+        $duplicados = 0;
         $lote = (string) Str::uuid();
 
         // Pacientes a los que se les confirmó (o no) la cita, para mostrarlos en pantalla.
@@ -271,30 +272,63 @@ class Consulta extends Component
 
             $registro['nombre'] = $this->nombreParaMensaje($registro, $usuario);
             $citacion = null;
+            $esNueva = false;
+            $anterior = null;
 
             try {
                 // Se guarda antes de encolar: el token es el enlace del botón "Ir a confirmar".
-                $citacion = CitacionMasiva::create([
-                    'lote'         => $lote,
-                    'archivo'      => $this->nombreArchivo,
+                // Si la misma cita se le envió al paciente en los últimos 3 meses se
+                // reutiliza el registro (y su enlace) para que no aparezca dos veces en
+                // el informe. El límite evita confundir fechas escritas sin año.
+                $clave = [
                     'user_id'      => $usuario->id,
+                    'especialidad' => $this->recortar($registro['especialidad'], 191),
+                    'fecha_cita'   => $this->recortar($registro['fecha'], 100),
+                    'hora'         => $this->recortar($registro['hora'], 100),
+                ];
+                $citacion = CitacionMasiva::where($clave)
+                    ->where('enviado_at', '>=', now()->subMonths(3))
+                    ->latest('enviado_at')
+                    ->first() ?? new CitacionMasiva($clave);
+                $esNueva = !$citacion->exists;
+
+                // La misma fila repetida en el archivo: ya se le envió en este envío.
+                if (!$esNueva && $citacion->lote === $lote) {
+                    $this->registros[$indice]['enviado'] = true;
+                    $duplicados++;
+                    continue;
+                }
+
+                // Si falla el encolado, el registro existente vuelve a como estaba.
+                $anterior = $esNueva ? null : $citacion->getAttributes();
+
+                $citacion->fill([
+                    'enviado_at'   => now(),
+                    'lote'         => $lote,
+                    'archivo'      => $this->recortar($this->nombreArchivo, 191),
                     'enviado_por'  => Auth::id(),
-                    'documento'    => $registro['documento'],
-                    'paciente'     => $registro['nombre'],
-                    'email'        => $usuario->email,
-                    'especialidad' => $registro['especialidad'],
-                    'dia'          => $registro['dia'],
-                    'fecha_cita'   => $registro['fecha'],
-                    'hora'         => $registro['hora'],
-                    'especialista' => $registro['especialista'],
+                    'documento'    => $this->recortar($registro['documento'], 30),
+                    'paciente'     => $this->recortar($registro['nombre'], 191),
+                    'email'        => $this->recortar($usuario->email, 191),
+                    'dia'          => $this->recortar($registro['dia'], 100),
+                    'especialista' => $this->recortar($registro['especialista'], 191),
                     'sede'         => $this->sede,
-                    'token'        => Str::random(48),
-                    'estado'       => CitacionMasiva::PENDIENTE,
                 ]);
+                if ($esNueva) {
+                    $citacion->token = Str::random(48);
+                    $citacion->estado = CitacionMasiva::PENDIENTE;
+                } elseif ($citacion->estado === CitacionMasiva::FALLIDO) {
+                    $citacion->estado = CitacionMasiva::PENDIENTE;
+                }
+                $citacion->save();
 
                 Mail::to($usuario->email)->queue(new MensajeMasivoCitacion(
                     $this->construirMensaje($registro),
-                    $citacion->urlConfirmacion()
+                    $citacion->urlConfirmacion(),
+                    // En un reenvío el paciente pudo recibir el correo anterior: si este
+                    // falla, el registro no se marca como "Correo no entregado".
+                    $esNueva || ($anterior['estado'] ?? null) === CitacionMasiva::FALLIDO ? $citacion->id : null,
+                    $lote
                 ));
                 $this->registros[$indice]['enviado'] = true;
                 $enviados++;
@@ -305,8 +339,14 @@ class Consulta extends Component
                     'error'   => $th->getMessage(),
                 ]);
                 // Sin correo no debe quedar en el informe como citación enviada.
-                if ($citacion) {
-                    $citacion->delete();
+                try {
+                    if ($citacion && $esNueva && $citacion->exists) {
+                        $citacion->delete();
+                    } elseif ($citacion && $anterior) {
+                        $citacion->setRawAttributes($anterior)->save();
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('Mensajes masivos: no se pudo revertir la citación', ['error' => $e->getMessage()]);
                 }
                 $fallidos++;
                 $noEnviados[] = $this->resumenPaciente($registro);
@@ -329,6 +369,7 @@ class Consulta extends Component
         $this->resultadoEnvio = [
             'enviados'    => $enviados,
             'fallidos'    => $fallidos,
+            'duplicados'  => $duplicados,
             'confirmados' => $confirmados,
             'noEnviados'  => $noEnviados,
         ];
@@ -363,6 +404,8 @@ class Consulta extends Component
             'sinCorreo'     => $sinCorreo,
             'incompletos'   => $incompletos,
             'porEnviar'     => count($this->indicesParaEnviar()),
+            'urlConfirmacion'     => CitacionMasiva::baseUrlConfirmacion(),
+            'enlaceSoloRedInterna' => CitacionMasiva::enlaceSoloRedInterna(),
             'pacientesPorEnviar' => $this->modalConfirmar
                 ? array_map(function ($i) {
                     return $this->resumenPaciente($this->registros[$i]);
@@ -398,6 +441,12 @@ class Consulta extends Component
             . "que estaba pendiente queda programada para el día {$registro['dia']}, {$registro['fecha']} con el Dr. {$registro['especialista']} "
             . "a las {$registro['hora']} {$direccion} traer autorizacion vigente, orden medica, historia clinica "
             . "llegar 40 minutos antes de la consulta para facturar.";
+    }
+
+    /** Ajusta el texto al tamaño de la columna: MySQL en modo estricto rechaza valores más largos. */
+    private function recortar($valor, $longitud)
+    {
+        return $valor === null ? null : mb_substr((string) $valor, 0, $longitud);
     }
 
     /** El saludo usa el NOMBRE DEL PACIENTE del Excel; si no viene, el nombre registrado en users. */

@@ -79,7 +79,7 @@
                 </div>
 
                 <div class="px-6 py-6 border-t border-gray-200">
-                    @if ($citacion->estado !== 'pendiente')
+                    @if (in_array($citacion->estado, ['asistira', 'no_asistira']))
                         <p class="text-sm text-gray-600 mb-4">
                             Su respuesta actual:
                             <strong class="{{ $citacion->estado === 'asistira' ? 'text-green-700' : 'text-amber-700' }}">{{ $citacion->estado_texto }}</strong>
