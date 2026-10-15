@@ -22,6 +22,7 @@ class Consulta extends Component
 
     /** Encabezados que se buscan en el Excel (clave interna => texto del encabezado). */
     const COLUMNAS = [
+        'paciente'     => 'NOMBRE DEL PACIENTE',
         'documento'    => 'NUMERO DE DOCUMENTO',
         'especialidad' => 'ESPECIALIDAD',
         'dia'          => 'DIA',
@@ -57,6 +58,8 @@ class Consulta extends Component
     /** Filas leídas del Excel con su usuario asociado (si existe). */
     public $registros = [];
     public $columnasFaltantes = [];
+    /** Sin la columna NOMBRE DEL PACIENTE se usa el nombre registrado en users. */
+    public $faltaNombrePaciente = false;
     public $nombreArchivo;
     public $nombreHoja;
 
@@ -203,7 +206,7 @@ class Consulta extends Component
             return;
         }
 
-        $registro['nombre'] = $this->nombreCompleto($usuario);
+        $registro['nombre'] = $this->nombreParaMensaje($registro, $usuario);
         $this->vistaPrevia = [
             'nombre'  => $registro['nombre'],
             'email'   => $usuario->email,
@@ -263,7 +266,7 @@ class Consulta extends Component
                 continue;
             }
 
-            $registro['nombre'] = $this->nombreCompleto($usuario);
+            $registro['nombre'] = $this->nombreParaMensaje($registro, $usuario);
 
             try {
                 Mail::to($usuario->email)->queue(new MensajeMasivoCitacion($this->construirMensaje($registro)));
@@ -341,7 +344,7 @@ class Consulta extends Component
     private function resumenPaciente(array $registro)
     {
         return [
-            'nombre'       => $registro['nombre'] ?: $registro['documento'],
+            'nombre'       => ($registro['paciente'] ?? '') ?: ($registro['nombre'] ?: $registro['documento']),
             'documento'    => $registro['documento'],
             'especialidad' => $registro['especialidad'],
             'fecha'        => trim($registro['dia'] . ', ' . $registro['fecha'], ', '),
@@ -367,6 +370,12 @@ class Consulta extends Component
             . "llegar 40 minutos antes de la consulta para facturar.";
     }
 
+    /** El saludo usa el NOMBRE DEL PACIENTE del Excel; si no viene, el nombre registrado en users. */
+    private function nombreParaMensaje(array $registro, $usuario)
+    {
+        return ($registro['paciente'] ?? '') ?: $this->nombreCompleto($usuario);
+    }
+
     private function nombreCompleto($usuario)
     {
         return trim(preg_replace('/\s+/', ' ', $usuario->name . ' ' . $usuario->apellido1 . ' ' . $usuario->apellido2));
@@ -376,6 +385,7 @@ class Consulta extends Component
     {
         $this->registros = [];
         $this->columnasFaltantes = [];
+        $this->faltaNombrePaciente = false;
         $this->nombreHoja = null;
         $this->pagina = 1;
         $this->seleccionados = [];
@@ -417,7 +427,7 @@ class Consulta extends Component
                 return true;
             }
 
-            return mb_strpos(mb_strtolower($r['documento'] . ' ' . $r['nombre'] . ' ' . $r['email'] . ' ' . $r['especialidad']), $busqueda) !== false;
+            return mb_strpos(mb_strtolower($r['documento'] . ' ' . ($r['paciente'] ?? '') . ' ' . $r['nombre'] . ' ' . $r['email'] . ' ' . $r['especialidad']), $busqueda) !== false;
         });
     }
 
@@ -502,7 +512,8 @@ class Consulta extends Component
             return false;
         }
 
-        $this->columnasFaltantes = array_values(array_diff_key(self::COLUMNAS, $mapa));
+        $this->columnasFaltantes = array_values(array_diff_key(self::COLUMNAS, $mapa, ['paciente' => true]));
+        $this->faltaNombrePaciente = !isset($mapa['paciente']);
         $this->nombreHoja = $libro->getSheetCount() > 1 ? $hoja->getTitle() : null;
         $combinadas = $this->celdasCombinadas($hoja, $mapa, $filaEncabezado + 1, $ultimaFila);
 

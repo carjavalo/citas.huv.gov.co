@@ -4,8 +4,8 @@
         <thead class="bg-gray-50 sticky top-0">
             <tr class="text-left font-semibold text-gray-600 uppercase tracking-wider">
                 <th class="px-3 py-2">#</th>
-                <th class="px-3 py-2">Paciente</th>
-                <th class="px-3 py-2">Documento</th>
+                <th class="px-3 py-2">Nombre del paciente</th>
+                <th class="px-3 py-2">Número de documento</th>
                 <th class="px-3 py-2">Especialidad</th>
                 <th class="px-3 py-2">Fecha y hora</th>
             </tr>

@@ -91,6 +91,13 @@
             </div>
         @endif
 
+        @if ($faltaNombrePaciente && count($registros))
+            <div class="mb-6 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-4 flex items-start">
+                <span class="material-icons mr-2">info</span>
+                <p class="text-sm">El archivo no tiene la columna <strong>NOMBRE DEL PACIENTE</strong>: se usará el nombre registrado en el sistema.</p>
+            </div>
+        @endif
+
         @if ($resultadoEnvio)
             <div class="mb-6 rounded-xl p-4 flex items-start border {{ $resultadoEnvio['fallidos'] ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-green-50 border-green-200 text-green-800' }}">
                 <span class="material-icons mr-2">{{ $resultadoEnvio['fallidos'] ? 'warning' : 'mark_email_read' }}</span>
@@ -194,8 +201,8 @@
                             <tr class="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                 <th class="px-4 py-3 w-10"></th>
                                 <th class="px-4 py-3">Fila</th>
-                                <th class="px-4 py-3">Documento</th>
-                                <th class="px-4 py-3">Paciente</th>
+                                <th class="px-4 py-3">Nombre del paciente</th>
+                                <th class="px-4 py-3">Número de documento</th>
                                 <th class="px-4 py-3">Correo</th>
                                 <th class="px-4 py-3">Especialidad</th>
                                 <th class="px-4 py-3">Fecha y hora</th>
@@ -217,8 +224,13 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-gray-500">{{ $registro['fila'] }}</td>
+                                    <td class="px-4 py-3 font-medium text-gray-800">
+                                        {{ ($registro['paciente'] ?? '') ?: ($registro['nombre'] ?? '—') }}
+                                        @if (($registro['paciente'] ?? '') && $registro['nombre'] && mb_strtoupper($registro['paciente']) !== mb_strtoupper($registro['nombre']))
+                                            <span class="block text-xs font-normal text-gray-500" title="Nombre registrado en el sistema">Registrado: {{ $registro['nombre'] }}</span>
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-3 font-mono text-gray-800">{{ $registro['documento'] }}</td>
-                                    <td class="px-4 py-3 text-gray-800">{{ $registro['nombre'] ?? '—' }}</td>
                                     <td class="px-4 py-3 text-gray-600">{{ $registro['email'] ?? '—' }}</td>
                                     <td class="px-4 py-3 text-gray-700">{{ $registro['especialidad'] }}</td>
                                     <td class="px-4 py-3 text-gray-700 whitespace-nowrap">
