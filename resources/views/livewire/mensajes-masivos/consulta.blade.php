@@ -20,9 +20,15 @@
     {{-- Contenido Principal --}}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {{-- Header --}}
-        <div class="mb-8">
-            <h1 class="text-2xl font-bold text-[#2c4370]">Mensajes Masivos de Citación</h1>
-            <p class="text-slate-500 mt-1">Importe un archivo de Excel, valide los pacientes registrados y envíeles por correo electrónico la programación de su cita.</p>
+        <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-[#2c4370]">Mensajes Masivos de Citación</h1>
+                <p class="text-slate-500 mt-1">Importe un archivo de Excel, valide los pacientes registrados y envíeles por correo electrónico la programación de su cita.</p>
+            </div>
+            <a href="{{ route('configuracion.mensajes-masivos.informe') }}"
+               class="inline-flex items-center justify-center px-4 py-2 bg-white border border-[#2c4370] text-[#2c4370] hover:bg-blue-50 rounded-lg text-sm font-medium shadow-sm whitespace-nowrap">
+                <span class="material-icons text-base mr-2">fact_check</span> Ver confirmaciones (Excel)
+            </a>
         </div>
 
         {{-- Paso 1: Importar archivo --}}
@@ -103,6 +109,10 @@
                 <span class="material-icons mr-2">{{ $resultadoEnvio['fallidos'] ? 'warning' : 'mark_email_read' }}</span>
                 <div class="text-sm flex-1">
                     <p class="font-semibold">{{ $resultadoEnvio['enviados'] }} mensaje(s) quedaron en cola para envío por correo electrónico.</p>
+                    @if ($resultadoEnvio['enviados'])
+                        <p>Cada paciente puede confirmar o rechazar su asistencia desde el botón "Ir a confirmar" del correo.
+                            <a href="{{ route('configuracion.mensajes-masivos.informe') }}" class="underline font-medium">Ver informe de confirmaciones</a></p>
+                    @endif
                     @if ($resultadoEnvio['fallidos'])
                         <p>{{ $resultadoEnvio['fallidos'] }} mensaje(s) no se pudieron encolar. Revise el log del sistema.</p>
                     @endif

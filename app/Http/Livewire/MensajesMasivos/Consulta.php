@@ -3,11 +3,13 @@
 namespace App\Http\Livewire\MensajesMasivos;
 
 use App\Mail\MensajeMasivoCitacion;
+use App\Models\CitacionMasiva;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
@@ -247,6 +249,7 @@ class Consulta extends Component
 
         $enviados = 0;
         $fallidos = 0;
+        $lote = (string) Str::uuid();
 
         // Pacientes a los que se les confirmó (o no) la cita, para mostrarlos en pantalla.
         $confirmados = [];
@@ -267,9 +270,32 @@ class Consulta extends Component
             }
 
             $registro['nombre'] = $this->nombreParaMensaje($registro, $usuario);
+            $citacion = null;
 
             try {
-                Mail::to($usuario->email)->queue(new MensajeMasivoCitacion($this->construirMensaje($registro)));
+                // Se guarda antes de encolar: el token es el enlace del botón "Ir a confirmar".
+                $citacion = CitacionMasiva::create([
+                    'lote'         => $lote,
+                    'archivo'      => $this->nombreArchivo,
+                    'user_id'      => $usuario->id,
+                    'enviado_por'  => Auth::id(),
+                    'documento'    => $registro['documento'],
+                    'paciente'     => $registro['nombre'],
+                    'email'        => $usuario->email,
+                    'especialidad' => $registro['especialidad'],
+                    'dia'          => $registro['dia'],
+                    'fecha_cita'   => $registro['fecha'],
+                    'hora'         => $registro['hora'],
+                    'especialista' => $registro['especialista'],
+                    'sede'         => $this->sede,
+                    'token'        => Str::random(48),
+                    'estado'       => CitacionMasiva::PENDIENTE,
+                ]);
+
+                Mail::to($usuario->email)->queue(new MensajeMasivoCitacion(
+                    $this->construirMensaje($registro),
+                    $citacion->urlConfirmacion()
+                ));
                 $this->registros[$indice]['enviado'] = true;
                 $enviados++;
                 $confirmados[] = $this->resumenPaciente($registro);
@@ -278,6 +304,10 @@ class Consulta extends Component
                     'user_id' => $usuario->id,
                     'error'   => $th->getMessage(),
                 ]);
+                // Sin correo no debe quedar en el informe como citación enviada.
+                if ($citacion) {
+                    $citacion->delete();
+                }
                 $fallidos++;
                 $noEnviados[] = $this->resumenPaciente($registro);
             }

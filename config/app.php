@@ -54,6 +54,11 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Dominio público para el botón "Ir a confirmar" de Mensajes Masivos: el
+    // paciente abre el enlace desde fuera del hospital. Vacío = el mismo
+    // dominio desde el que se hace el envío.
+    'url_citaciones' => env('CITACIONES_URL'),
+
     'asset_url' => env('ASSET_URL', null),
 
     /*

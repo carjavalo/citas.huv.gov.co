@@ -10,6 +10,7 @@ use Illuminate\Queue\SerializesModels;
 /**
  * Citación enviada desde Mensajes Masivos: el texto ya llega armado con los
  * datos de la fila del Excel (especialidad, día, fecha, especialista, hora y sede).
+ * Al final lleva el botón "Ir a confirmar" para que el paciente responda.
  */
 class MensajeMasivoCitacion extends Mailable implements ShouldQueue
 {
@@ -23,9 +24,13 @@ class MensajeMasivoCitacion extends Mailable implements ShouldQueue
 
     public $mensaje;
 
-    public function __construct($mensaje)
+    /** @var string|null Enlace a la vista donde el paciente confirma o no su asistencia. */
+    public $urlConfirmacion;
+
+    public function __construct($mensaje, $urlConfirmacion = null)
     {
-        $this->mensaje = $mensaje;
+        $this->mensaje         = $mensaje;
+        $this->urlConfirmacion = $urlConfirmacion;
     }
 
     public function build()

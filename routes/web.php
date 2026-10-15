@@ -14,12 +14,14 @@ use App\Http\Livewire\Reporte\Agente\Procesado;
 use App\Http\Controllers\reportecitas;
 use App\Http\Controllers\servicioscontroller;
 use App\Http\Controllers\DocumentoController;
+use App\Http\Controllers\CitacionConfirmacionController;
 use App\Http\Livewire\Servicios\Consulta as ConsultarServicios;
 use App\Http\Livewire\Sedes\Consulta as ConsultarSedes;
 use App\Http\Livewire\Pservicios\Consulta as ConsultarPservicios;
 use App\Http\Livewire\Especialidades\Consulta as ConsultarEspecialidades;
 use App\Http\Livewire\Campanas\Consulta as ConsultarCampanas;
 use App\Http\Livewire\MensajesMasivos\Consulta as ConsultarMensajesMasivos;
+use App\Http\Livewire\MensajesMasivos\Informe as InformeMensajesMasivos;
 use App\Http\Livewire\Roles\Consulta as ConsultarRoles;
 use App\Http\Livewire\Operando\Consulta as OperandoConsulta;
 use Illuminate\Support\Facades\Auth;
@@ -42,6 +44,12 @@ Route::get('prueba-s3', function() {
 });
 
 Route::get('/registro', UsuariosRegistro::class)->name('registro');
+
+// Público: el paciente llega desde el botón "Ir a confirmar" del correo de Mensajes Masivos.
+Route::get('/citacion/{token}', [CitacionConfirmacionController::class, 'mostrar'])
+    ->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:30,1')->name('citacion.confirmar');
+Route::post('/citacion/{token}', [CitacionConfirmacionController::class, 'responder'])
+    ->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:10,1')->name('citacion.responder');
 
 // Ruta para capturar accesos directos a /Documentos/* (URLs antiguas o directas)
 Route::get('/Documentos/{path}', [DocumentoController::class, 'verDirecto'])->where('path', '.*')->middleware(['auth:sanctum', 'verified']);
@@ -69,6 +77,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/configuracion/especialidades/consulta', ConsultarEspecialidades::class)->name('configuracion.especialidades');
     Route::get('/configuracion/campanas/consulta', ConsultarCampanas::class)->name('configuracion.campanas');
     Route::get('/configuracion/mensajes-masivos/consulta', ConsultarMensajesMasivos::class)->name('configuracion.mensajes-masivos')->middleware('role:Super Admin');
+    Route::get('/configuracion/mensajes-masivos/informe', InformeMensajesMasivos::class)->name('configuracion.mensajes-masivos.informe')->middleware('role:Super Admin');
     Route::get('/configuracion/roles/consulta',ConsultarRoles::class)->name('configuracion.roles');
     Route::get('/configuracion/mantenimiento',  \App\Http\Livewire\Configuracion\MaintenanceMode::class)->name('configuracion.mantenimiento')->middleware('role:Super Admin');
     Route::get('/operando/sql', OperandoConsulta::class)->name('operando.sql');
