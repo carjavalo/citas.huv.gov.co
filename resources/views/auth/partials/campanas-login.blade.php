@@ -3,6 +3,7 @@
      Si no hay campañas vigentes (o la sección está deshabilitada) se sigue mostrando el logo animado. --}}
 @php
     $campanasLogin = collect();
+    $carruselAutomatico = false;
     $intervaloCarrusel = 5;
 
     try {
@@ -12,7 +13,9 @@
                 ->orderByDesc('created_at')
                 ->take(10)
                 ->get();
-            $intervaloCarrusel = min(max((int) \App\Models\ConfiguracionSistema::obtener('carrusel_campanas_intervalo', 5), 3), 30);
+            // "Carrusel Automático de Campañas" e "Intervalo de cambio" de Configuración > Campañas
+            $carruselAutomatico = \App\Models\ConfiguracionSistema::estaHabilitado('carrusel_campanas_automatico');
+            $intervaloCarrusel =min(max((int) \App\Models\ConfiguracionSistema::obtener('carrusel_campanas_intervalo', 5), 3), 30);
         }
     } catch (\Throwable $e) {
         // El login nunca debe fallar por las campañas: ante cualquier error se muestra el logo
@@ -99,7 +102,8 @@
         @media (prefers-reduced-motion: reduce) { .cl-slide, .cl-dot { transition: none; } }
     </style>
 
-    <div id="campanas-login" class="cl-card" aria-roledescription="carrusel" aria-label="Novedades y campañas" data-intervalo="{{ $intervaloCarrusel }}">
+    <div id="campanas-login" class="cl-card" aria-roledescription="carrusel" aria-label="Novedades y campañas"
+         data-auto="{{ $carruselAutomatico ? 1 : 0 }}" data-intervalo="{{ $intervaloCarrusel }}">
         <div class="cl-slides">
             @foreach($diapositivasLogin as $diapositiva)
                 @php
@@ -116,8 +120,8 @@
                     <div class="cl-media cl-cat-{{ $campana->categoria }}">
                         @switch($diapositiva['material'])
                             @case('video')
-                                {{-- Con varias diapositivas el video pasa a la siguiente al terminar; si es la única, se repite --}}
-                                <video muted playsinline {{ $loop->first ? 'autoplay' : '' }} {{ $totalDiapositivas === 1 ? 'loop' : '' }}
+                                {{-- Se repite mientras está en pantalla; el carrusel lo cambia con el intervalo configurado --}}
+                                <video muted playsinline loop {{ $loop->first ? 'autoplay' : '' }}
                                        preload="{{ $loop->first ? 'auto' : 'none' }}"
                                        @if($urlImagen) {{ $loop->first ? 'poster' : 'data-poster' }}="{{ $urlImagen }}" @endif>
                                     <source src="{{ $urlVideo }}" @if($tipoVideo) type="{{ $tipoVideo }}" @endif>
@@ -197,6 +201,7 @@
             var slides = raiz.querySelectorAll('.cl-slide');
             var puntos = raiz.querySelectorAll('.cl-dot');
             var contador = raiz.querySelector('.cl-contador');
+            var automatico = raiz.dataset.auto === '1';
             var intervalo = (parseInt(raiz.dataset.intervalo, 10) || 5) * 1000;
             var actual = 0;
             var temporizador = null;
@@ -261,13 +266,12 @@
                 slide.querySelectorAll('[data-pdf]').forEach(dibujarPdf);
             }
 
-            // Imágenes y PDF cambian con el intervalo configurado; los videos, al terminar (evento "ended")
-            function programarSiguiente(forzarTiempo) {
+            // Con el carrusel automático, cada diapositiva (video, imagen o PDF) cambia con el intervalo configurado;
+            // en modo manual solo se cambia con las flechas, los puntos o deslizando el dedo
+            function programarSiguiente() {
                 clearTimeout(temporizador);
-                if (pausado || slides.length < 2) return;
-                if (forzarTiempo || !slides[actual].querySelector('video')) {
-                    temporizador = setTimeout(function () { mostrar(actual + 1); }, intervalo);
-                }
+                if (!automatico || pausado || slides.length < 2) return;
+                temporizador = setTimeout(function () { mostrar(actual + 1); }, intervalo);
             }
 
             function mostrar(indice) {
@@ -284,27 +288,15 @@
                 puntos.forEach(function (punto, i) { punto.classList.toggle('is-active', i === actual); });
                 if (contador) contador.textContent = (actual + 1) + ' / ' + slides.length;
 
+                // El video sigue desde donde quedó, así en cada vuelta se ve una parte nueva
                 var video = slides[actual].querySelector('video');
                 if (video) {
                     video.preload = 'auto';
-                    try { video.currentTime = 0; } catch (e) {}
                     var reproduccion = video.play();
                     if (reproduccion && reproduccion.catch) reproduccion.catch(function () {});
                 }
-                programarSiguiente(false);
+                programarSiguiente();
             }
-
-            raiz.querySelectorAll('video').forEach(function (video) {
-                var slide = video.closest('.cl-slide');
-                video.addEventListener('ended', function () {
-                    if (slides[actual] === slide) mostrar(actual + 1);
-                });
-                // Si el navegador no puede reproducir el video, que el carrusel no se quede detenido en él
-                var fuente = video.querySelector('source');
-                if (fuente) fuente.addEventListener('error', function () {
-                    if (slides[actual] === slide) programarSiguiente(true);
-                });
-            });
 
             raiz.querySelectorAll('.cl-flecha').forEach(function (boton) {
                 boton.addEventListener('click', function () { mostrar(actual + parseInt(boton.dataset.paso, 10)); });
@@ -318,7 +310,7 @@
                 if (e.pointerType === 'mouse') { pausado = true; clearTimeout(temporizador); }
             });
             raiz.addEventListener('pointerleave', function (e) {
-                if (e.pointerType === 'mouse') { pausado = false; programarSiguiente(false); }
+                if (e.pointerType === 'mouse') { pausado = false; programarSiguiente(); }
             });
 
             // En celulares se puede deslizar el dedo para cambiar
@@ -333,7 +325,7 @@
 
             cargar(0);
             if (slides.length > 1) cargar(1);
-            programarSiguiente(false);
+            programarSiguiente();
         })();
     </script>
 @endif
