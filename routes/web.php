@@ -14,6 +14,7 @@ use App\Http\Livewire\Reporte\Agente\Procesado;
 use App\Http\Controllers\reportecitas;
 use App\Http\Controllers\servicioscontroller;
 use App\Http\Controllers\DocumentoController;
+use App\Http\Controllers\ArchivoPublicoController;
 use App\Http\Controllers\CitacionConfirmacionController;
 use App\Http\Livewire\Servicios\Consulta as ConsultarServicios;
 use App\Http\Livewire\Sedes\Consulta as ConsultarSedes;
@@ -50,6 +51,12 @@ Route::get('/citacion/{token}', [CitacionConfirmacionController::class, 'mostrar
     ->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:citacion')->name('citacion.confirmar');
 Route::post('/citacion/{token}', [CitacionConfirmacionController::class, 'responder'])
     ->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:citacion')->name('citacion.responder');
+
+// Archivos del disco "public" (Campañas: imágenes, videos y PDF) cuando el servidor no tiene el enlace
+// public/storage. Con el enlace creado (php artisan storage:link) el servidor web los entrega sin pasar por aquí.
+// Sin el grupo "web": no abre sesión ni registra actividad en cada petición de imagen o video.
+Route::get('/storage/{path}', [ArchivoPublicoController::class, 'mostrar'])
+    ->where('path', '.*')->withoutMiddleware('web')->name('storage.publico');
 
 // Ruta para capturar accesos directos a /Documentos/* (URLs antiguas o directas)
 Route::get('/Documentos/{path}', [DocumentoController::class, 'verDirecto'])->where('path', '.*')->middleware(['auth:sanctum', 'verified']);
