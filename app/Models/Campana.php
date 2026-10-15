@@ -54,6 +54,27 @@ class Campana extends Model
                     ->where('fecha_inicio', '>', now());
     }
 
+    // Campañas que deben verse hoy en la pantalla de inicio de sesión: publicadas, o programadas
+    // cuya fecha de inicio ya llegó, visibles y dentro de su rango de fechas (sin fecha = sin límite).
+    public function scopeVigentes($query)
+    {
+        $hoy = today()->toDateString();
+
+        return $query->where('visible', true)
+            ->where(function ($q) use ($hoy) {
+                $q->where('estado', 'publicado')
+                  ->orWhere(function ($q) use ($hoy) {
+                      $q->where('estado', 'programado')->whereDate('fecha_inicio', '<=', $hoy);
+                  });
+            })
+            ->where(function ($q) use ($hoy) {
+                $q->whereNull('fecha_inicio')->orWhereDate('fecha_inicio', '<=', $hoy);
+            })
+            ->where(function ($q) use ($hoy) {
+                $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', $hoy);
+            });
+    }
+
     public function getImagenUrlAttribute()
     {
         if ($this->imagen) {
