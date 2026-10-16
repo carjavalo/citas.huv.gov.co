@@ -25,6 +25,7 @@ use App\Http\Livewire\MensajesMasivos\Consulta as ConsultarMensajesMasivos;
 use App\Http\Livewire\MensajesMasivos\Informe as InformeMensajesMasivos;
 use App\Http\Livewire\Roles\Consulta as ConsultarRoles;
 use App\Http\Livewire\Permisos\Gestor as GestorPermisos;
+use App\Http\Livewire\Roles\Gestion as GestionRoles;
 use App\Http\Livewire\Operando\Consulta as OperandoConsulta;
 use Illuminate\Support\Facades\Auth;
 
@@ -88,6 +89,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/configuracion/mensajes-masivos/consulta', ConsultarMensajesMasivos::class)->name('configuracion.mensajes-masivos')->middleware('can:admin.mensajes_masivos.consultar');
     Route::get('/configuracion/mensajes-masivos/informe', InformeMensajesMasivos::class)->name('configuracion.mensajes-masivos.informe')->middleware('can:admin.mensajes_masivos.consultar');
     Route::get('/configuracion/roles/consulta',ConsultarRoles::class)->name('configuracion.roles');
+    Route::get('/configuracion/gestion-roles', GestionRoles::class)->name('configuracion.gestion-roles')->middleware('can:admin.roles.gestionar');
     // Gestor de permisos: no es asignable, quien lo use podría darse cualquier permiso.
     Route::get('/configuracion/permisos', GestorPermisos::class)->name('configuracion.permisos')->middleware('role:Super Admin');
     Route::get('/configuracion/mantenimiento',  \App\Http\Livewire\Configuracion\MaintenanceMode::class)->name('configuracion.mantenimiento')->middleware('can:admin.mantenimiento.gestionar');

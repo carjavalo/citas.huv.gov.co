@@ -74,6 +74,7 @@ class Consulta extends Component
         return view('livewire.usuarios.consulta', [
             'usuarios'  => $query->orderBy('name','asc')->paginate(10),           
             'roles'     => $this->getRolesVisibles(),
+            'rolesConSede' => Role::where('requiere_sede', true)->pluck('name')->all(),
         ]);
 
 
@@ -103,6 +104,12 @@ class Consulta extends Component
      * Roles que el usuario puede asignar. Se configuran por rol en el
      * Gestor de permisos (sección "Roles que puede asignar").
      */
+    /** El rol trabaja con sede y servicio (se configura en Gestión Roles). */
+    private function rolRequiereSede($nombre): bool
+    {
+        return Role::where('name', $nombre)->where('requiere_sede', true)->exists();
+    }
+
     private function getRolesVisibles()
     {
         return RolesAsignables::paraUsuario(auth()->user());
@@ -153,8 +160,7 @@ class Consulta extends Component
     // Cuando cambia el rol, resetear sede y pservicio si no es Consultor, Coordinador o Administrador
     public function updatedUsuRol($value)
     {
-        $rolesConSede = ['Consultor', 'Coordinador', 'Administrador'];
-        if (in_array($value, $rolesConSede)) {
+        if ($this->rolRequiereSede($value)) {
             // Cargar sedes cuando se selecciona rol Consultor, Coordinador o Administrador
             $this->sedes = Sede::where('estado', 1)->get();
         } else {
@@ -216,9 +222,9 @@ class Consulta extends Component
                 }
                 $user->assignRole($this->usu_rol);
                 // Si es Consultor, Coordinador o Administrador, guardar sede y pservicio; si no, limpiarlos
-                $rolesConSede = ['Consultor', 'Coordinador', 'Administrador'];
-                $sedeId = in_array($this->usu_rol, $rolesConSede) ? ($this->usu_sede ?: null) : null;
-                $pservicioId = in_array($this->usu_rol, $rolesConSede) ? ($this->usu_pservicio ?: null) : null;
+                $conSede = $this->rolRequiereSede($this->usu_rol);
+                $sedeId = $conSede ? ($this->usu_sede ?: null) : null;
+                $pservicioId = $conSede ? ($this->usu_pservicio ?: null) : null;
                 
                 $user->update([
                     'name'          => $this->nombres,

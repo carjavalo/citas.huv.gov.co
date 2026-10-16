@@ -56,8 +56,8 @@
                             </select>
                         </div>
                         
-                        {{-- Campos condicionales para roles Consultor, Coordinador y Administrador --}}
-                        @if(in_array($usu_rol, ['Consultor', 'Coordinador', 'Administrador']))
+                        {{-- Campos condicionales para roles que requieren sede y servicio (Gestión Roles) --}}
+                        @if(in_array($usu_rol, $rolesConSede))
                         <div class="col-span-6 sm:col-span-3">
                             <label for="sede" class="block text-sm font-medium text-gray-700">Sede<span class="text-red-500">*</span></label>
                             <select wire:model="usu_sede" id="sede" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">

@@ -29,8 +29,10 @@ class Gestor extends Component
     {
         $this->soloSuperAdmin();
 
-        $primero = $this->roles()->first();
-        $this->seleccionarRol($primero->id ?? null);
+        // ?role=ID: llega desde Gestión Roles con el rol ya elegido.
+        $roles = $this->roles();
+        $pedido = $roles->firstWhere('id', (int) request()->query('role'));
+        $this->seleccionarRol(($pedido ?? $roles->first())->id ?? null);
     }
 
     public function seleccionarRol($roleId)

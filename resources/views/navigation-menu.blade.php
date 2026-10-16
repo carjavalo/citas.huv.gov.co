@@ -38,7 +38,7 @@
                     </x-jet-nav-link>
                 </div>
                 @endcan
-                @canany(['admin.servicios.consultar', 'admin.sedes.consultar', 'admin.pservicios.consultar', 'admin.especialidades.consultar', 'admin.campanas.consultar', 'admin.mensajes_masivos.consultar', 'admin.roles.consultar', 'admin.mantenimiento.gestionar'])
+                @canany(['admin.servicios.consultar', 'admin.sedes.consultar', 'admin.pservicios.consultar', 'admin.especialidades.consultar', 'admin.campanas.consultar', 'admin.mensajes_masivos.consultar', 'admin.roles.consultar', 'admin.roles.gestionar', 'admin.mantenimiento.gestionar'])
                 <div class="hidden sm:flex sm:items-center sm:ml-6">
                     <div class="relative">
                         <x-jet-dropdown align="left" width="48">
@@ -84,12 +84,17 @@
                                     {{ __('Mensajes Masivos') }}
                                 </a>
                                 @endcan
-                                @canany(['admin.roles.consultar', 'admin.mantenimiento.gestionar'])
+                                @canany(['admin.roles.consultar', 'admin.roles.gestionar', 'admin.mantenimiento.gestionar'])
                                 <div class="border-t border-gray-200 my-1"></div>
                                 @endcanany
                                 @can('admin.roles.consultar')
                                 <a href="{{ route('configuracion.roles') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('Roles') }}
+                                </a>
+                                @endcan
+                                @can('admin.roles.gestionar')
+                                <a href="{{ route('configuracion.gestion-roles') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
+                                    {{ __('Gestión Roles') }}
                                 </a>
                                 @endcan
                                 @role('Super Admin')

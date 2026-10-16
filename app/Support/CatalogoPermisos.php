@@ -18,6 +18,15 @@ class CatalogoPermisos
     /** Rol con acceso total (Gate::before): no se configura en el gestor. */
     public const SUPER_ADMIN = 'Super Admin';
 
+    /**
+     * Roles cuyo nombre usa el código (registro, redirecciones, tiempos de
+     * sesión...). En Gestión Roles no se pueden renombrar ni eliminar.
+     */
+    public const ROLES_SISTEMA = [
+        'Super Admin', 'Administrador', 'Coordinador', 'Consultor',
+        'Usuario', 'Hospital', 'Gestor Obstetricia',
+    ];
+
     public const ACCIONES = [
         'ver' => 'Ver',
         'crear' => 'Crear',
@@ -100,6 +109,16 @@ class CatalogoPermisos
             'key' => 'roles', 'titulo' => 'Roles', 'grupo' => 'Configuración servicios',
             'ruta' => '/configuracion/roles/consulta',
             'acciones' => ['ver' => 'admin.roles.consultar'],
+        ],
+        [
+            'key' => 'gestion-roles', 'titulo' => 'Gestión Roles', 'grupo' => 'Configuración servicios',
+            'ruta' => '/configuracion/gestion-roles',
+            'acciones' => [
+                'ver' => 'admin.roles.gestionar',
+                'crear' => 'admin.roles.crear',
+                'editar' => 'admin.roles.editar',
+                'borrar' => 'admin.roles.eliminar',
+            ],
         ],
         [
             'key' => 'mantenimiento', 'titulo' => 'P_Downd (modo mantenimiento)', 'grupo' => 'Configuración servicios',
