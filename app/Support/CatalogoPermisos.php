@@ -61,6 +61,9 @@ class CatalogoPermisos
                 'editar' => 'admin.usuarios.update',
                 'borrar' => 'admin.usuarios.eliminar',
             ],
+            'otras' => [
+                'admin.usuarios.verificar_correo' => 'Autorizar verificación de correo',
+            ],
         ],
         [
             'key' => 'configuracion-eps', 'titulo' => 'Configuración eps', 'grupo' => 'Menú principal',

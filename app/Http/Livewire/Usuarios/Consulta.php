@@ -286,7 +286,8 @@ class Consulta extends Component
 
     public function autorizarVerificacionCorreo()
     {
-        if (!auth()->user()->hasRole('Super Admin')) {
+        // Quién autoriza la verificación se decide en el Gestor de permisos.
+        if (!auth()->user()->can('admin.usuarios.verificar_correo')) {
             $this->emit('alertError', 'No tiene permisos para autorizar la verificación de correo.');
             return;
         }

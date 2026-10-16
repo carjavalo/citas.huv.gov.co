@@ -119,7 +119,10 @@
                                 @error('nueva_password') <span class="mt-1 inline-block px-2 text-xs text-red-600">{{ $message }}</span> @enderror
                             </div>
                         </div>
+                        @endif
 
+                        {{-- Autorizar verificación de correo: permiso admin.usuarios.verificar_correo (Gestor de permisos) --}}
+                        @can('admin.usuarios.verificar_correo')
                         <div class="col-span-6">
                             <div class="bg-blue-50 border border-blue-300 rounded-md p-3">
                                 <div class="flex items-center justify-between gap-3">
@@ -149,7 +152,7 @@
                                 </div>
                             </div>
                         </div>
-                        @endif
+                        @endcan
 
                         <div class="col-span-6 sm:col-span-3">
                             <div class="block col-span-6 sm:col-span-3 justify-center">
