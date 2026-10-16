@@ -74,20 +74,24 @@
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                     <!-- This example requires Tailwind CSS v2.0+ -->
                     <div class="grid grid-cols-6 gap-6 mx-2 my-2">
-                        @role('Super Admin')
+                        @canany(['citas.solicitudes.eliminar', 'citas.solicitudes.reenviar'])
                         <div class="col-span-6 flex items-center gap-4 mb-2">
+                            @can('citas.solicitudes.eliminar')
                             <button onclick="if(confirm('¿Está seguro de eliminar las solicitudes seleccionadas? Esta acción no se puede deshacer.')) { @this.call('eliminarSeleccionados') }" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2" {{ count($selectedSolicitudes) == 0 ? 'disabled' : '' }}>
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 Eliminar seleccionados ({{ count($selectedSolicitudes) }})
                             </button>
+                            @endcan
+                            @can('citas.solicitudes.reenviar')
                             <button type="button" wire:click="prepararReenvio" wire:loading.attr="disabled"
                                     class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-2 px-4 rounded flex items-center gap-2"
                                     title="Reenvía la citación a los pacientes con cita agendada cuya fecha aún no ha pasado">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                 Volver a notificar
                             </button>
+                            @endcan
                         </div>
-                        @endrole
+                        @endcanany
                         <div class="col-span-6 sm:col-span-1">
                             <label for="filestado" class="block text-sm text-center font-medium text-gray-700">Filtrar por estado</label>
                             <select wire:model="filestado" id="filestado" autocomplete="off" class="mt-1 focus:ring-blue-500 focus:blue-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
@@ -137,11 +141,11 @@
                                     <table class="min-w-full divide-y divide-gray-300">
                                         <thead class="bg-gray-50">
                                             <tr>
-                                                @role('Super Admin')
+                                                @can('citas.solicitudes.eliminar')
                                                 <th scope="col" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     <input type="checkbox" wire:model="selectAll" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                                                 </th>
-                                                @endrole
+                                                @endcan
                                                 <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" wire:click="sortBy('solicitudes.id')">
                                                     <div class="flex items-center justify-center">
                                                         ID
@@ -249,11 +253,11 @@
                                             @if(count($solicitudes)>0)
                                             @foreach ($solicitudes as $solicitud)
                                             <tr>
-                                                @role('Super Admin')
+                                                @can('citas.solicitudes.eliminar')
                                                 <td class="px-3 py-4 whitespace-nowrap text-center">
                                                     <input type="checkbox" value="{{ $solicitud->id }}" wire:model="selectedSolicitudes" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 cursor-pointer w-5 h-5">
                                                 </td>
-                                                @endrole
+                                                @endcan
                                                 <td>
                                                     <p class="text-xs text-center">{{ $solicitud->id }}</p>
                                                 </td>
@@ -320,25 +324,25 @@
                                                         <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mx-1" wire:click="notificarEspera({{ $solicitud->id }})">Espera</button>
                                                         <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-2 rounded mx-1" wire:click="rechazar({{ $solicitud->id }})">Rechazar</button>                                                                                                                         
                                                         <button class="bg-gray-600 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded mx-1" wire:click="notificarEspera({{ $solicitud->id }})" onclick="cargarespecialidades()">Cambiar Esp</button>
-                                                        @role('Super Admin')
+                                                        @can('citas.solicitudes.eliminar')
                                                         <button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-2 rounded mx-1" onclick="if(confirm('¿Está seguro de eliminar esta solicitud? Esta acción no se puede deshacer.')) { @this.call('eliminarSolicitud', {{ $solicitud->id }}) }" title="Eliminar">🗑️</button>
-                                                        @endrole
+                                                        @endcan
                                                        @break
 
                                                         @case('Agendado')
                                                         <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mx-1" wire:click="detalles({{ $solicitud->id }})">Detalles</button>
                                                         <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mx-1" wire:click="cancelarCita({{ $solicitud->id }})" onclick="confirm('¿Está seguro de cancelar esta cita?') || event.stopImmediatePropagation()">Cancelar</button>
-                                                        @role('Super Admin')
+                                                        @can('citas.solicitudes.eliminar')
                                                         <button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-2 rounded mx-1" onclick="if(confirm('¿Está seguro de eliminar esta solicitud? Esta acción no se puede deshacer.')) { @this.call('eliminarSolicitud', {{ $solicitud->id }}) }" title="Eliminar">🗑️</button>
-                                                        @endrole
+                                                        @endcan
                                                             @break
                                                         
                                                         @case('Procesando')
                                                         <button class="bg-yellow-200 hover:bg-yellow-300 font-bold py-2 px-4 rounded mx-1" wire:click="cambiarEstado({{ $solicitud->id }})">Estado anterior</button>
                                                         <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mx-1" wire:click="detalles({{ $solicitud->id }})">Detalles</button>
-                                                        @role('Super Admin')
+                                                        @can('citas.solicitudes.eliminar')
                                                         <button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-2 rounded mx-1" onclick="if(confirm('¿Está seguro de eliminar esta solicitud? Esta acción no se puede deshacer.')) { @this.call('eliminarSolicitud', {{ $solicitud->id }}) }" title="Eliminar">🗑️</button>
-                                                        @endrole
+                                                        @endcan
                                                             @break
 
                                                         @case('Espera')
@@ -346,15 +350,15 @@
                                                         <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mx-1" wire:click="detalles({{ $solicitud->id }})">Detalles</button>
                                                         <button class="bg-yellow-200 hover:bg-yellow-300 font-bold py-2 px-4 rounded mx-1" wire:click="reagendarCita({{ $solicitud->id }})" onclick="confirm('¿Está seguro de reagendar a pendiente esta cita?') || event.stopImmediatePropagation()">Regresar pendiente</button>                                                                                                         
                                                         <button class="bg-gray-600 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded mx-1" wire:click="notificarEspera({{ $solicitud->id }})" onclick="cargarespecialidades()">Cambiar Esp</button>
-                                                        @role('Super Admin')
+                                                        @can('citas.solicitudes.eliminar')
                                                         <button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-2 rounded mx-1" onclick="if(confirm('¿Está seguro de eliminar esta solicitud? Esta acción no se puede deshacer.')) { @this.call('eliminarSolicitud', {{ $solicitud->id }}) }" title="Eliminar">🗑️</button>
-                                                        @endrole
+                                                        @endcan
                                                             @break
                                                         @case('Rechazada')
                                                         <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mx-1" wire:click="detalles({{ $solicitud->id }})">Detalles</button>
-                                                        @role('Super Admin')
+                                                        @can('citas.solicitudes.eliminar')
                                                         <button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-2 rounded mx-1" onclick="if(confirm('¿Está seguro de eliminar esta solicitud? Esta acción no se puede deshacer.')) { @this.call('eliminarSolicitud', {{ $solicitud->id }}) }" title="Eliminar">🗑️</button>
-                                                        @endrole
+                                                        @endcan
                                                             @break
                                                     @endswitch
                                                     </span>
@@ -363,7 +367,7 @@
                                             @endforeach
                                             @else
                                             <tr>
-                                                <td colspan="@role('Super Admin') 7 @else 6 @endrole">
+                                                <td colspan="{{ auth()->user()->can('citas.solicitudes.eliminar') ? 7 : 6 }}">
                                                     <p class="text-center text text-lg underline">Sin solicitudes por procesar</p>
                                                 </td>
                                             </tr>

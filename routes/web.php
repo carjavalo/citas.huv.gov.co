@@ -24,6 +24,7 @@ use App\Http\Livewire\Campanas\Consulta as ConsultarCampanas;
 use App\Http\Livewire\MensajesMasivos\Consulta as ConsultarMensajesMasivos;
 use App\Http\Livewire\MensajesMasivos\Informe as InformeMensajesMasivos;
 use App\Http\Livewire\Roles\Consulta as ConsultarRoles;
+use App\Http\Livewire\Permisos\Gestor as GestorPermisos;
 use App\Http\Livewire\Operando\Consulta as OperandoConsulta;
 use Illuminate\Support\Facades\Auth;
 
@@ -83,31 +84,38 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/configuracion/pservicios/consulta', ConsultarPservicios::class)->name('configuracion.pservicios');
     Route::get('/configuracion/especialidades/consulta', ConsultarEspecialidades::class)->name('configuracion.especialidades');
     Route::get('/configuracion/campanas/consulta', ConsultarCampanas::class)->name('configuracion.campanas');
-    Route::get('/configuracion/mensajes-masivos/consulta', ConsultarMensajesMasivos::class)->name('configuracion.mensajes-masivos')->middleware('role:Super Admin');
-    Route::get('/configuracion/mensajes-masivos/informe', InformeMensajesMasivos::class)->name('configuracion.mensajes-masivos.informe')->middleware('role:Super Admin');
+    // El acceso a cada opción lo gobierna el Gestor de permisos (permisos de Spatie).
+    Route::get('/configuracion/mensajes-masivos/consulta', ConsultarMensajesMasivos::class)->name('configuracion.mensajes-masivos')->middleware('can:admin.mensajes_masivos.consultar');
+    Route::get('/configuracion/mensajes-masivos/informe', InformeMensajesMasivos::class)->name('configuracion.mensajes-masivos.informe')->middleware('can:admin.mensajes_masivos.consultar');
     Route::get('/configuracion/roles/consulta',ConsultarRoles::class)->name('configuracion.roles');
-    Route::get('/configuracion/mantenimiento',  \App\Http\Livewire\Configuracion\MaintenanceMode::class)->name('configuracion.mantenimiento')->middleware('role:Super Admin');
+    // Gestor de permisos: no es asignable, quien lo use podría darse cualquier permiso.
+    Route::get('/configuracion/permisos', GestorPermisos::class)->name('configuracion.permisos')->middleware('role:Super Admin');
+    Route::get('/configuracion/mantenimiento',  \App\Http\Livewire\Configuracion\MaintenanceMode::class)->name('configuracion.mantenimiento')->middleware('can:admin.mantenimiento.gestionar');
     Route::get('/operando/sql', OperandoConsulta::class)->name('operando.sql');
-    Route::get('reporte/solicitudes/general', Procesado::class)->name('reporte.solicitudes.procesado');  
+    Route::get('reporte/solicitudes/general', Procesado::class)->name('reporte.solicitudes.procesado');
     Route::get('obstetricia', GodsonRequestComponent::class)->name('obstetricia');
-    Route::get('/reporte/especialidades', function() { return view('reporte.especialidades'); })->name('reporte.especialidades');
-    Route::get('/reporte/ingresos', \App\Http\Livewire\Reporte\Ingresos::class)->name('reporte.ingresos')->middleware('role:Super Admin');
+    Route::get('/reporte/especialidades', function() { return view('reporte.especialidades'); })->name('reporte.especialidades')->middleware('can:admin.reporte.especialidades');
+    Route::get('/reporte/ingresos', \App\Http\Livewire\Reporte\Ingresos::class)->name('reporte.ingresos')->middleware('can:admin.reporte.ingresos');
 
-    //rutas para gestionar servicios   
-    Route::get('/reportecitas/export', [reportecitas::class, 'reportecitasExport'])->name('reporte.solicitudes.reportecitas');
-    Route::get('modulo/servicios/servicios', [servicioscontroller::class,'index'])->name('list_servicios');
-    Route::get('modulo/servicios/create_servicios', [servicioscontroller::class,'create'])->name('create_servicios');
-    Route::post('modulo/servicios/store_servicios', [servicioscontroller::class,'store'])->name('store_servicios');
-    Route::get('modulo/servicios/vista_servicios/{id}', [servicioscontroller::class,'show'])->name('vista_servicios');
-    Route::get('modulo/servicios/edit_servicios/{id}', [servicioscontroller::class,'edit'])->name('edit_servicios');
-    Route::put('modulo/servicios/save_servicios/{id}', [servicioscontroller::class,'update'])->name('save_servicios');
+    //rutas para gestionar servicios
+    Route::get('/reportecitas/export', [reportecitas::class, 'reportecitasExport'])->name('reporte.solicitudes.reportecitas')->middleware('can:admin.reporte.citas');
+    Route::middleware('can:admin.gestionar_servicios')->group(function () {
+        Route::get('modulo/servicios/servicios', [servicioscontroller::class,'index'])->name('list_servicios');
+        Route::get('modulo/servicios/create_servicios', [servicioscontroller::class,'create'])->name('create_servicios');
+        Route::post('modulo/servicios/store_servicios', [servicioscontroller::class,'store'])->name('store_servicios');
+        Route::get('modulo/servicios/vista_servicios/{id}', [servicioscontroller::class,'show'])->name('vista_servicios');
+        Route::get('modulo/servicios/edit_servicios/{id}', [servicioscontroller::class,'edit'])->name('edit_servicios');
+        Route::put('modulo/servicios/save_servicios/{id}', [servicioscontroller::class,'update'])->name('save_servicios');
+    });
     //rutas para agendascitas
-    Route::get('modulo/AgendaCitas/menuagenda', 'App\Http\Controllers\agendarController@index')->name('menuagenda');
-    Route::get('modulo/AgendaCitas/usuarios/usuagenda', 'App\Http\Controllers\usuagendaController@index')->name('usuagenda');
-    Route::get('modulo/AgendaCitas/usuarios/usuagenda', [App\Http\Controllers\usuagendaController::class,'index'])->name('usuarios_agenda');
-    Route::get('modulo/AgendaCitas/usuarios/crearusuagenda', [App\Http\Controllers\usuagendaController::class,'create'])->name('crea_usuarios_agenda');
-    Route::post('modulo/AgendaCitas/usuarios/crearusuagenda', [App\Http\Controllers\usuagendaController::class,'store'])->name('store_usuarios_agenda');
-    Route::get('modulo/AgendaCitas/usuarios/{id}', [App\Http\Controllers\usuagendaController::class,'show'])->name('show_usuarios_agenda');
+    Route::middleware('can:admin.agenda.consultar')->group(function () {
+        Route::get('modulo/AgendaCitas/menuagenda', 'App\Http\Controllers\agendarController@index')->name('menuagenda');
+        Route::get('modulo/AgendaCitas/usuarios/usuagenda', 'App\Http\Controllers\usuagendaController@index')->name('usuagenda');
+        Route::get('modulo/AgendaCitas/usuarios/usuagenda', [App\Http\Controllers\usuagendaController::class,'index'])->name('usuarios_agenda');
+        Route::get('modulo/AgendaCitas/usuarios/crearusuagenda', [App\Http\Controllers\usuagendaController::class,'create'])->name('crea_usuarios_agenda');
+        Route::post('modulo/AgendaCitas/usuarios/crearusuagenda', [App\Http\Controllers\usuagendaController::class,'store'])->name('store_usuarios_agenda');
+        Route::get('modulo/AgendaCitas/usuarios/{id}', [App\Http\Controllers\usuagendaController::class,'show'])->name('show_usuarios_agenda');
+    });
    
    
    

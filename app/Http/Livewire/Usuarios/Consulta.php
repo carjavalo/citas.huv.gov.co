@@ -7,6 +7,7 @@ use App\Models\tipo_identificacion;
 use App\Models\User;
 use App\Models\Sede;
 use App\Models\Pservicio;
+use App\Support\RolesAsignables;
 use Livewire\Component;
 use Spatie\Permission\Models\Role;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -98,50 +99,13 @@ class Consulta extends Component
         $this->modal = false;
     }
 
+    /**
+     * Roles que el usuario puede asignar. Se configuran por rol en el
+     * Gestor de permisos (sección "Roles que puede asignar").
+     */
     private function getRolesVisibles()
     {
-        $user = auth()->user();
-        
-        // Super Admin ve todos los roles
-        if ($user->hasRole('Super Admin')) {
-            return Role::all(['id', 'name']);
-        }
-        
-        // Administrador ve todos excepto Super Admin y Administrador
-        if ($user->hasRole('Administrador')) {
-            return Role::whereNotIn('name', ['Super Admin', 'Administrador'])->get(['id', 'name']);
-        }
-        
-        // Coordinador no ve: Super Admin, Administrador, Gestor Obstetricia, Hospital
-        if ($user->hasRole('Coordinador')) {
-            return Role::whereNotIn('name', ['Super Admin', 'Administrador', 'Gestor Obstetricia', 'Hospital'])->get(['id', 'name']);
-        }
-        
-        // Por defecto, no ve Super Admin ni Coordinador
-        return Role::whereNotIn('name', ['Super Admin', 'Coordinador'])->get(['id', 'name']);
-    }
-
-    private function getRolesRestringidos()
-    {
-        $user = auth()->user();
-        
-        // Super Admin puede asignar cualquier rol
-        if ($user->hasRole('Super Admin')) {
-            return [];
-        }
-        
-        // Administrador no puede asignar Super Admin ni Administrador
-        if ($user->hasRole('Administrador')) {
-            return ['Super Admin', 'Administrador'];
-        }
-        
-        // Coordinador no puede asignar: Super Admin, Administrador, Gestor Obstetricia, Hospital
-        if ($user->hasRole('Coordinador')) {
-            return ['Super Admin', 'Administrador', 'Gestor Obstetricia', 'Hospital'];
-        }
-        
-        // Por defecto, roles restringidos
-        return ['Super Admin', 'Coordinador'];
+        return RolesAsignables::paraUsuario(auth()->user());
     }
 
     public function editar($id) //Esta función inicializa variables para mostrar en la modal
@@ -240,8 +204,7 @@ class Consulta extends Component
 
         try {
                 // Validar permisos de asignación de roles
-                $rolesRestringidos = $this->getRolesRestringidos();
-                if (in_array($this->usu_rol, $rolesRestringidos)) {
+                if (!$this->getRolesVisibles()->contains('name', $this->usu_rol)) {
                     $this->emit('alertError', 'No tiene permisos para asignar el rol ' . $this->usu_rol . '.');
                     return;
                 }
@@ -286,8 +249,8 @@ class Consulta extends Component
 
     public function eliminar($id)
     {
-        // Solo Super Admin puede eliminar usuarios
-        if (!auth()->user()->hasRole('Super Admin')) {
+        // Quién elimina usuarios se decide en el Gestor de permisos
+        if (!auth()->user()->can('admin.usuarios.eliminar')) {
             $this->emit('alertError', 'No tiene permisos para eliminar usuarios.');
             return;
         }

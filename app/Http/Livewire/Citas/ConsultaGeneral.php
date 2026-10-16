@@ -77,7 +77,7 @@ class ConsultaGeneral extends Component
 
     public function mount()
     {
-        $this->authorize('citas.consulta.agendar');
+        $this->authorize('citas.consulta.solicitudes');
         $this->filestado = 'Pendiente';
     }
 
@@ -322,7 +322,7 @@ class ConsultaGeneral extends Component
     private function autorizarReenvio(): void
     {
         $this->authorize('citas.consulta.agendar');
-        abort_unless(Auth::user()->hasRole('Super Admin'), 403);
+        $this->authorize('citas.solicitudes.reenviar');
     }
 
     /**
@@ -798,7 +798,7 @@ class ConsultaGeneral extends Component
             $this->emit('alertError', 'No se pudo identificar la solicitud. Por favor, recargue la página e intente nuevamente.');
             return;
         }
-        if (!Auth::user()->hasRole('Super Admin')) {
+        if (!Auth::user()->can('citas.solicitudes.eliminar')) {
             $this->emit('alertError', 'No tiene permisos para eliminar solicitudes.');
             return;
         }
@@ -823,10 +823,10 @@ class ConsultaGeneral extends Component
         }
     }
 
-    // Eliminar solicitudes seleccionadas (Solo Super Admin)
+    // Eliminar solicitudes seleccionadas (permiso citas.solicitudes.eliminar)
     public function eliminarSeleccionados()
     {
-        if (!Auth::user()->hasRole('Super Admin')) {
+        if (!Auth::user()->can('citas.solicitudes.eliminar')) {
             $this->emit('alertError', 'No tiene permisos para eliminar solicitudes.');
             return;
         }

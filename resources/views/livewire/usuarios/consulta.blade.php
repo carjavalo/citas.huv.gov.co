@@ -59,7 +59,7 @@
                                                             Editar
                                                         </button>
                                                         
-                                                        @if(auth()->user()->hasRole('Super Admin'))
+                                                        @if(auth()->user()->can('admin.usuarios.eliminar'))
                                                             <button 
                                                                 wire:click="eliminar({{ $usuario->id }})" 
                                                                 onclick="return confirm('¿Está seguro de eliminar este usuario? Esta acción no se puede deshacer.')"

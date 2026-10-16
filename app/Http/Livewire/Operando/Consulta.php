@@ -25,7 +25,7 @@ class Consulta extends Component
     public function mount()
     {
         // Solo Super Admin puede acceder
-        if (!auth()->user()->hasRole('Super Admin')) {
+        if (!auth()->user()->can('admin.operando')) {
             abort(403, 'No tiene permisos para acceder a esta vista.');
         }
         

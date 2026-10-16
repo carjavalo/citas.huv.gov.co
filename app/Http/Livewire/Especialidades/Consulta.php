@@ -26,7 +26,7 @@ class Consulta extends Component
 
     public function mount()
     {
-        $this->authorize('admin.servicios.consultar');
+        $this->authorize('admin.especialidades.consultar');
     }
 
     public function updatedFiltroSede()

@@ -84,7 +84,7 @@ class Consulta extends Component
 
     public function mount()
     {
-        $this->authorize('admin.servicios.consultar');
+        $this->authorize('admin.campanas.consultar');
         $this->seccionHabilitada = ConfiguracionSistema::estaHabilitado('seccion_novedades_campanas_habilitada');
         
         // Cargar estado del carrusel desde la configuración

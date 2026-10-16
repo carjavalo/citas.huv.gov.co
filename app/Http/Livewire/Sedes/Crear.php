@@ -32,7 +32,7 @@ class Crear extends Component
 
     public function mount($sede_id = null)
     {
-        $this->authorize('admin.servicios.consultar');
+        $this->authorize('admin.sedes.consultar');
         
         if ($sede_id) {
             $this->modoEdicion = true;

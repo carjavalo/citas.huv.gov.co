@@ -31,7 +31,7 @@ class Crear extends Component
 
     public function mount($pservicio_id = null)
     {
-        $this->authorize('admin.servicios.consultar');
+        $this->authorize('admin.pservicios.consultar');
         
         if ($pservicio_id) {
             $this->modoEdicion = true;

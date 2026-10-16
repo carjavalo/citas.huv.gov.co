@@ -35,7 +35,7 @@ class Consulta extends Component
 
     public function mount()
     {
-        $this->authorize('admin.servicios.consultar');
+        $this->authorize('admin.pservicios.consultar');
     }
     
     public function render()

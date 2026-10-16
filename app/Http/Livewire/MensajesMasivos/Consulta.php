@@ -427,7 +427,7 @@ class Consulta extends Component
 
     private function autorizar(): void
     {
-        abort_unless(Auth::check() && Auth::user()->hasRole('Super Admin'), 403);
+        abort_unless(Auth::check() && Auth::user()->can('admin.mensajes_masivos.consultar'), 403);
     }
 
     /** Arma el texto de la citación con los datos de la fila y la sede elegida. */

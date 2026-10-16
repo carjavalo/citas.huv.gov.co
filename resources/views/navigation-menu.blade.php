@@ -30,16 +30,15 @@
                     </x-jet-nav-link>
                 </div>
                 @endcan
+                {{-- Las opciones del menú las gobierna el Gestor de permisos (permisos de Spatie). --}}
                 @can('admin.eps.consultar')
-                @unlessrole('Coordinador')
                 <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
                     <x-jet-nav-link href="{{ route('configuracion.eps.consulta') }}" :active="request()->routeIs('configuracion.eps.consulta')">
                         {{ __('Configuración eps') }}
                     </x-jet-nav-link>
                 </div>
-                @endunlessrole
                 @endcan
-                @can('admin.servicios.consultar')
+                @canany(['admin.servicios.consultar', 'admin.sedes.consultar', 'admin.pservicios.consultar', 'admin.especialidades.consultar', 'admin.campanas.consultar', 'admin.mensajes_masivos.consultar', 'admin.roles.consultar', 'admin.mantenimiento.gestionar'])
                 <div class="hidden sm:flex sm:items-center sm:ml-6">
                     <div class="relative">
                         <x-jet-dropdown align="left" width="48">
@@ -55,44 +54,59 @@
                             </x-slot>
 
                             <x-slot name="content">
+                                @can('admin.servicios.consultar')
                                 <a href="{{ route('configuracion.servicios') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('Activar servicios') }}
                                 </a>
-                                @unlessrole('Coordinador')
+                                @endcan
+                                @can('admin.sedes.consultar')
                                 <a href="{{ route('configuracion.sedes') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('Sede') }}
                                 </a>
+                                @endcan
+                                @can('admin.pservicios.consultar')
                                 <a href="{{ route('configuracion.pservicios') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('Servicios') }}
                                 </a>
+                                @endcan
+                                @can('admin.especialidades.consultar')
                                 <a href="{{ route('configuracion.especialidades') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('Especialidades') }}
                                 </a>
-                                @endunlessrole
-                                @unlessrole('Coordinador')
+                                @endcan
+                                @can('admin.campanas.consultar')
                                 <a href="{{ route('configuracion.campanas') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('Campañas') }}
                                 </a>
-                                @endunlessrole
-                                @role('Super Admin')
+                                @endcan
+                                @can('admin.mensajes_masivos.consultar')
                                 <a href="{{ route('configuracion.mensajes-masivos') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('Mensajes Masivos') }}
                                 </a>
-                                @endrole
-                                @role('Super Admin')
+                                @endcan
+                                @canany(['admin.roles.consultar', 'admin.mantenimiento.gestionar'])
                                 <div class="border-t border-gray-200 my-1"></div>
+                                @endcanany
+                                @can('admin.roles.consultar')
                                 <a href="{{ route('configuracion.roles') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('Roles') }}
                                 </a>
+                                @endcan
+                                @role('Super Admin')
+                                <a href="{{ route('configuracion.permisos') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
+                                    {{ __('Gestor de permisos') }}
+                                </a>
+                                @endrole
+                                @can('admin.mantenimiento.gestionar')
                                 <a href="{{ route('configuracion.mantenimiento') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                     {{ __('P_Downd') }}
                                 </a>
-                                @endrole
+                                @endcan
                             </x-slot>
                         </x-jet-dropdown>
                     </div>
                 </div>
-                @endcan
+                @endcanany
               
               
              <!--   @can('admin.reporte.agentes')
@@ -120,14 +134,14 @@
                         <x-slot name="trigger">
                         
                                 <span class="inline-flex rounded-md">
-                                  @can('admin.reporte.agentes')   
+                                  @canany(['admin.reporte.agentes', 'admin.reporte.citas', 'admin.reporte.especialidades', 'admin.reporte.ingresos'])
                                     <button type="button" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-transparent hover:text-gray-200 focus:outline-none transition">
                                     {{ __('Reportes') }}
                                         <svg class="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                         </svg>
                                     </button>
-                                   @endcan 
+                                   @endcanany
                                 </span>                         
                         </x-slot>
 
@@ -149,19 +163,23 @@
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
 
+                                @can('admin.reporte.citas')
                                 <a href="{{ route('reporte.solicitudes.reportecitas') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                    {{ __('Citas') }}
                                 </a>
+                                @endcan
 
+                                @can('admin.reporte.especialidades')
                                 <a href="{{ route('reporte.especialidades') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                    {{ __('Especialidades') }}
                                 </a>
+                                @endcan
 
-                                @role('Super Admin')
+                                @can('admin.reporte.ingresos')
                                 <a href="{{ route('reporte.ingresos') }}" class="block px-4 py-2 text-sm hover:bg-gray-100" style="color: #2c4370;">
                                    {{ __('Ingresos') }}
                                 </a>
-                                @endrole
+                                @endcan
                                
                             </form>
                         </x-slot>
@@ -174,21 +192,21 @@
 <!--   --------------------------------------------------------------   ---------->
                
 
-              @role('Super Admin')
+              @can('menu.atencion_telesalud')
                 <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex text-center">
                     <x-jet-nav-link href="{{ route('obstetricia') }}" :active="request()->routeIs('obstetricia')">
                         {{ __('Atención Telesalud') }}
                     </x-jet-nav-link>
                 </div>
-                @endrole
+                @endcan
 
-                @role('Super Admin')
+                @can('admin.agenda.consultar')
                 <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex text-center">
                     <x-jet-nav-link href="{{ route('menuagenda') }}" :active="request()->routeIs('menuagenda')">
                         {{ __('Atención Usuarios') }}
                     </x-jet-nav-link>
                 </div>
-                @endrole
+                @endcan
 
 
 
@@ -277,19 +295,21 @@
                                                                 
                             </div>
 
-                            @role('Super Admin')
+                            @can('admin.gestionar_servicios')
                                 <x-jet-dropdown-link  href="{{ route('list_servicios') }}">
                                     {{ __('Gestionar Servicios') }}
                                 </x-jet-dropdown-link>
-                                
+                            @endcan
+                            @can('admin.agenda.consultar')
                                 <x-jet-dropdown-link  href="{{ route('menuagenda') }}">
                                     {{ __('Gestionar Usuarios') }}
                                 </x-jet-dropdown-link>
-                                
+                            @endcan
+                            @can('admin.operando')
                                 <x-jet-dropdown-link  href="{{ route('operando.sql') }}">
                                     {{ __('Operando') }}
                                 </x-jet-dropdown-link>
-                            @endrole
+                            @endcan
                            
 
                             <x-jet-dropdown-link href="{{ route('profile.show') }}">

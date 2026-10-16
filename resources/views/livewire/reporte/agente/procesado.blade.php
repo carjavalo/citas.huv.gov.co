@@ -65,7 +65,7 @@
                         <div class="col-span-6 sm:col-span-2">
                             <div class="flex gap-2 mt-6">
                                 <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" wire:click="filtroRangoFecha()">Aplicar filtro</button>
-                                @if($filtro_ok)
+                                @if($filtro_ok && auth()->user()->can('admin.reporte.agentes.exportar.filtro_fecha'))
                                 <button class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" wire:click="exportar()">Exportar reporte</button>
                                 @endif
                             </div>
@@ -182,7 +182,7 @@
 
                 {{-- Botón exportar hoy --}}
                 <div class="flex justify-end mt-4">
-                    @if(!$filtro_ok)
+                    @if(!$filtro_ok && auth()->user()->can('admin.reporte.agentes.exportar.hoy'))
                     <button class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mx-1" wire:click="exportarHoy()">Exportar hoy</button>
                     @endif
                 </div>

@@ -121,8 +121,8 @@ class Procesado extends Component
         if (!$user) {
             return false;
         }
-        return $user->hasAnyRole(['Super Admin', 'Admin', 'Administrador', 'Coordinador'])
-            || $user->can($permiso);
+        // Quién exporta se decide en el Gestor de permisos.
+        return $user->can($permiso);
     }
 
     public function exportar()
