@@ -62,11 +62,11 @@
 @else
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
     <style>
-        .cl-card { position: relative; width: 100%; max-width: 28rem; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 20px 45px rgba(0, 0, 0, .35); }
+        .cl-card { position: relative; /* Ocupa la columna izquierda del login sin pasarse del alto de la pantalla (media 16:10 + pie). */ width: min(100%, 56rem, calc((100vh - 160px) * 1.6)); border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 20px 45px rgba(0, 0, 0, .35); }
         .cl-slides { display: grid; }
         .cl-slide { grid-area: 1 / 1; display: flex; flex-direction: column; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility .6s; }
         .cl-slide.is-active { opacity: 1; visibility: visible; }
-        .cl-media { position: relative; aspect-ratio: 4 / 3; background: #0f1d36; overflow: hidden; }
+        .cl-media { position: relative; aspect-ratio: 16 / 10; background: #0f1d36; overflow: hidden; }
         .cl-media img, .cl-media video { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
         .cl-media > a { display: block; width: 100%; height: 100%; }
         /* Copia desenfocada de la imagen para rellenar los lados de los afiches verticales */
@@ -86,12 +86,12 @@
         .cl-badge-urgente { background: #dc2626; }
         .cl-caption { flex: 1; padding: 14px 18px 16px; background: #fff; }
         .cl-caption.is-dark { background: #1e2f4d; }
-        .cl-caption h3 { margin: 0; font-weight: 700; line-height: 1.25; }
+        .cl-caption h3 { margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.25; }
         .cl-caption p { margin: 6px 0 0; opacity: .85; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         .cl-pdf { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 5px 12px; border-radius: 9999px; background: #dc2626; color: #fff; font-size: 12px; font-weight: 600; text-decoration: none; }
         .cl-pdf:hover { background: #b91c1c; }
         .cl-pdf-alterno .cl-pdf { margin-top: 0; background: #fff; color: #b91c1c; }
-        .cl-nav { position: absolute; top: 0; left: 0; right: 0; aspect-ratio: 4 / 3; pointer-events: none; }
+        .cl-nav { position: absolute; top: 0; left: 0; right: 0; aspect-ratio: 16 / 10; pointer-events: none; }
         .cl-flecha { pointer-events: auto; position: absolute; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border: 0; border-radius: 9999px; background: rgba(255, 255, 255, .85); color: #2c4370; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
         .cl-flecha:hover { background: #fff; }
         .cl-prev { left: 10px; }
@@ -99,6 +99,15 @@
         .cl-dots { pointer-events: auto; position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 9999px; background: rgba(0, 0, 0, .35); color: #fff; font-size: 12px; font-weight: 600; }
         .cl-dot { width: 9px; height: 9px; padding: 0; border: 0; border-radius: 9999px; background: rgba(255, 255, 255, .55); cursor: pointer; transition: width .3s; }
         .cl-dot.is-active { width: 22px; background: #fff; }
+        .cl-capa-sonido { position: absolute; top: 0; left: 0; right: 0; aspect-ratio: 16 / 10; pointer-events: none; }
+        .cl-sonido { pointer-events: auto; position: absolute; top: 10px; right: 10px; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 0; border-radius: 9999px; background: rgba(255, 255, 255, .9); color: #2c4370; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
+        .cl-sonido[hidden] { display: none; }
+        .cl-sonido:hover { background: #fff; }
+        .cl-sonido .cl-ico-sonido, .cl-sonido.is-on .cl-ico-mudo { display: none; }
+        .cl-sonido.is-on .cl-ico-sonido { display: inline; }
+        /* Con el sonido activo queda solo el ícono, para no tapar el video */
+        .cl-sonido.is-on { width: 34px; padding: 0; justify-content: center; }
+        .cl-sonido.is-on .cl-sonido-texto { display: none; }
         @media (prefers-reduced-motion: reduce) { .cl-slide, .cl-dot { transition: none; } }
     </style>
 
@@ -120,7 +129,7 @@
                     <div class="cl-media cl-cat-{{ $campana->categoria }}">
                         @switch($diapositiva['material'])
                             @case('video')
-                                {{-- Se repite mientras está en pantalla; el carrusel lo cambia con el intervalo configurado --}}
+                                {{-- Se reproduce completo (con sonido si el navegador lo permite) y al terminar el carrusel avanza; si es la única diapositiva, se repite --}}
                                 <video muted playsinline loop {{ $loop->first ? 'autoplay' : '' }}
                                        preload="{{ $loop->first ? 'auto' : 'none' }}"
                                        @if($urlImagen) {{ $loop->first ? 'poster' : 'data-poster' }}="{{ $urlImagen }}" @endif>
@@ -193,6 +202,15 @@
                 </div>
             </div>
         @endif
+
+        {{-- Sonido de los videos: visible solo cuando la diapositiva actual es un video --}}
+        <div class="cl-capa-sonido">
+            <button type="button" class="cl-sonido" hidden aria-label="Activar sonido" aria-pressed="false">
+                <svg class="cl-ico-mudo" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2v6h4l5 4V5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M23 9l-6 6M17 9l6 6"></path></svg>
+                <svg class="cl-ico-sonido" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2v6h4l5 4V5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"></path></svg>
+                <span class="cl-sonido-texto">Activar sonido</span>
+            </button>
+        </div>
     </div>
 
     <script>
@@ -268,11 +286,91 @@
 
             // Con el carrusel automático, cada diapositiva (video, imagen o PDF) cambia con el intervalo configurado;
             // en modo manual solo se cambia con las flechas, los puntos o deslizando el dedo
+            // Un video no se corta en el intervalo: se ve (y se escucha) completo y al terminar pasa a la siguiente
             function programarSiguiente() {
                 clearTimeout(temporizador);
                 if (!automatico || pausado || slides.length < 2) return;
+                var video = videoActual();
+                if (video && !(video.error || video.networkState === video.NETWORK_NO_SOURCE)) return;
                 temporizador = setTimeout(function () { mostrar(actual + 1); }, intervalo);
             }
+
+            // ---- Sonido de los videos ----
+            // Los navegadores no dejan reproducir con sonido hasta que la persona interactúa con la página.
+            // Se intenta con sonido; si el navegador lo bloquea, sigue en silencio y el sonido se activa con
+            // el primer clic o tecla en la página, o con el botón del parlante.
+            var botonSonido = raiz.querySelector('.cl-sonido');
+            var quiereSonido = true;
+
+            function videoActual() { return slides[actual].querySelector('video'); }
+
+            function actualizarBotonSonido() {
+                var video = videoActual();
+                botonSonido.hidden = !video;
+                var encendido = !!video && !video.muted;
+                botonSonido.classList.toggle('is-on', encendido);
+                botonSonido.setAttribute('aria-pressed', encendido ? 'true' : 'false');
+                botonSonido.setAttribute('aria-label', encendido ? 'Silenciar' : 'Activar sonido');
+            }
+
+            function reproducir(video) {
+                video.preload = 'auto';
+                video.muted = !quiereSonido;
+                var intento = video.play();
+                if (intento && intento.catch) {
+                    intento.catch(function () {
+                        // Bloqueado con sonido: se reproduce en silencio hasta la primera interacción
+                        if (!video.muted) {
+                            video.muted = true;
+                            var silencio = video.play();
+                            if (silencio && silencio.catch) silencio.catch(function () {});
+                        }
+                        actualizarBotonSonido();
+                    });
+                }
+                actualizarBotonSonido();
+            }
+
+            function prepararVideo(video) {
+                if (video.dataset.listo) return;
+                video.dataset.listo = '1';
+                // Con varias diapositivas el video no se repite: al terminar avanza el carrusel
+                if (slides.length > 1) video.loop = false;
+                video.addEventListener('ended', function () {
+                    if (video !== videoActual()) return;
+                    if (automatico && !pausado) { mostrar(actual + 1); } else { video.play(); }
+                });
+                video.addEventListener('error', programarSiguiente, true);
+                video.addEventListener('volumechange', actualizarBotonSonido);
+            }
+
+            botonSonido.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var video = videoActual();
+                if (!video) return;
+                quiereSonido = video.muted;
+                video.muted = !quiereSonido;
+                if (!video.muted) {
+                    var intento = video.play();
+                    if (intento && intento.catch) intento.catch(function () {});
+                }
+                actualizarBotonSonido();
+            });
+
+            // Primera interacción con la página (clic en el correo, una tecla...): se habilita el sonido
+            function activarConInteraccion() {
+                document.removeEventListener('pointerdown', activarConInteraccion, true);
+                document.removeEventListener('keydown', activarConInteraccion, true);
+                var video = videoActual();
+                if (quiereSonido && video && video.muted) {
+                    video.muted = false;
+                    var intento = video.play();
+                    if (intento && intento.catch) intento.catch(function () {});
+                    actualizarBotonSonido();
+                }
+            }
+            document.addEventListener('pointerdown', activarConInteraccion, true);
+            document.addEventListener('keydown', activarConInteraccion, true);
 
             function mostrar(indice) {
                 var videoAnterior = slides[actual].querySelector('video');
@@ -289,12 +387,12 @@
                 if (contador) contador.textContent = (actual + 1) + ' / ' + slides.length;
 
                 // El video sigue desde donde quedó, así en cada vuelta se ve una parte nueva
-                var video = slides[actual].querySelector('video');
+                var video = videoActual();
                 if (video) {
-                    video.preload = 'auto';
-                    var reproduccion = video.play();
-                    if (reproduccion && reproduccion.catch) reproduccion.catch(function () {});
+                    prepararVideo(video);
+                    reproducir(video);
                 }
+                actualizarBotonSonido();
                 programarSiguiente();
             }
 
@@ -325,6 +423,12 @@
 
             cargar(0);
             if (slides.length > 1) cargar(1);
+            var primerVideo = videoActual();
+            if (primerVideo) {
+                prepararVideo(primerVideo);
+                reproducir(primerVideo);
+            }
+            actualizarBotonSonido();
             programarSiguiente();
         })();
     </script>
