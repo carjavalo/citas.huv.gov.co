@@ -18,7 +18,10 @@ class Consulta extends Component
 {
     use AuthorizesRequests;
     use WithPagination;
-    
+
+    /** Al cerrar el módulo de importación la tabla debe mostrar los usuarios creados. */
+    protected $listeners = ['usuariosImportados' => '$refresh'];
+
     public $modal = false; //Encargada de la modal
     public $usu_id, $nombres, $apellido1, $apellido2, $email, $usu_rol, $usu_eps, $tdoc, $ndoc, $telefono1, $telefono2; //Datos del usuario para editar
     public $aseguradoras; //Almacena las eps

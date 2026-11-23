@@ -63,6 +63,7 @@ class CatalogoPermisos
             ],
             'otras' => [
                 'admin.usuarios.verificar_correo' => 'Autorizar verificación de correo',
+                'admin.usuarios.importar' => 'Importar usuarios desde Excel',
             ],
         ],
         [

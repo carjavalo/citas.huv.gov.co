@@ -15,7 +15,11 @@
                                                 <input type="text" wire:model="nombre" id="" placeholder="Filtrar por Nombres" class="mt-1 inline focus:ring-blue-500 focus:blue-indigo-500 w-auto shadow-sm sm:text-sm border-gray-300 rounded-md">
                                                 <input type="text" wire:model="apellidos1" id="" placeholder="Filtrar por Primer Apellido" class="mt-1 inline focus:ring-blue-500 focus:blue-indigo-500 w-auto shadow-sm sm:text-sm border-gray-300 rounded-md">
                                                 <input type="text" wire:model="identificacion" id="" placeholder="Filtrar por Documento" class="mt-1 inline focus:ring-blue-500 focus:blue-indigo-500 w-auto shadow-sm sm:text-sm border-gray-300 rounded-md">
-                                            </th>                                        
+                                                {{-- Importar usuarios desde Excel: el permiso se asigna en el Gestor de permisos --}}
+                                                @can('admin.usuarios.importar')
+                                                    @livewire('usuarios.importar')
+                                                @endcan
+                                            </th>                                      
                                            <!-- <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Usuarios
                                                 <input type="text" wire:model="ndocumentos" id="" placeholder="Filtrar por apellido" class="mt-1 inline focus:ring-blue-500 focus:blue-indigo-500 w-auto shadow-sm sm:text-sm border-gray-300 rounded-md">
