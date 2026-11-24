@@ -44,21 +44,49 @@ class Consulta extends Component
         ],
     ];
 
-    /** Máximo de registros por archivo: todo el listado viaja en cada petición de Livewire. */
-    const MAX_REGISTROS = 5000;
+    /**
+     * Máximo de registros por archivo. El listado NO viaja al navegador: se
+     * guarda en disco (ver $almacen) y el envío se hace por lotes, así que el
+     * tope lo marca la memoria que consume PhpSpreadsheet al leer el archivo.
+     */
+    const MAX_REGISTROS = 25000;
 
     /** Filas que se leen del archivo (registros + margen para títulos y encabezado). */
     const MAX_FILAS_LECTURA = self::MAX_REGISTROS + 16;
 
     const POR_PAGINA = 100;
 
+    /**
+     * Registros que se procesan en cada petición de envío. El resto continúa
+     * con wire:poll; así ninguna petición se acerca a max_execution_time.
+     */
+    const POR_LOTE = 1000;
+
+    /** Máximo de pacientes que se listan en pantalla (el informe completo está en el Excel). */
+    const MAX_EN_PANTALLA = 200;
+
+    /** Carpeta y vigencia de los listados guardados en disco. */
+    const CARPETA_ALMACEN = 'mensajes-masivos';
+    const HORAS_ALMACEN = 6;
+
     const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
 
     public $archivo;
     public $sede = 'cali';
 
-    /** Filas leídas del Excel con su usuario asociado (si existe). */
-    public $registros = [];
+    /**
+     * Identificador del archivo en disco con las filas leídas del Excel. Es lo
+     * único que viaja al navegador: con 25.000 registros el listado completo
+     * pesaría varios MB en cada petición de Livewire.
+     */
+    public $almacen;
+
+    /** Filas leídas del Excel con su usuario asociado (si existe). No se serializa. */
+    protected $registros = [];
+
+    /** Indica si $registros cambió y hay que volver a escribirlo en disco. */
+    protected $almacenSucio = false;
+
     public $columnasFaltantes = [];
     /** Sin la columna NOMBRE DEL PACIENTE se usa el nombre registrado en users. */
     public $faltaNombrePaciente = false;
@@ -76,17 +104,27 @@ class Consulta extends Component
     public $modalConfirmar = false;
     public $resultadoEnvio = null;
 
+    /** Envío por lotes: progreso que se muestra mientras wire:poll llama a enviarLote(). */
+    public $envioEnCurso = false;
+    public $envioLote = null;
+    public $envioTotal = 0;
+    public $envioEnviados = 0;
+    public $envioFallidos = 0;
+    public $envioDuplicados = 0;
+    public $envioConfirmados = [];
+    public $envioNoEnviados = [];
+
     // 'txt' porque el servidor detecta los .csv como text/plain; la extensión
     // real se valida en procesarArchivo().
     protected $rules = [
-        'archivo' => 'required|file|mimes:xlsx,xls,csv,txt|max:2048',
+        'archivo' => 'required|file|mimes:xlsx,xls,csv,txt|max:25600',
         'sede'    => 'required|in:cali,cartago',
     ];
 
     protected $messages = [
         'archivo.required' => 'Debe seleccionar un archivo de Excel.',
         'archivo.mimes'    => 'El archivo debe ser de tipo .xlsx, .xls o .csv.',
-        'archivo.max'      => 'El archivo no puede superar los 2 MB.',
+        'archivo.max'      => 'El archivo no puede superar los 25 MB.',
     ];
 
     public function mount()
@@ -102,17 +140,109 @@ class Consulta extends Component
     public function hydrate()
     {
         $this->autorizar();
+        $this->registros = $this->leerAlmacen();
+        $this->almacenSucio = false;
+    }
+
+    /** Lo que cambió en $registros durante la petición se persiste al final. */
+    public function dehydrate()
+    {
+        if ($this->almacenSucio) {
+            $this->escribirAlmacen();
+            $this->almacenSucio = false;
+        }
+    }
+
+    private function rutaAlmacen($token = null)
+    {
+        $token = $token ?: $this->almacen;
+        if (!$token || !preg_match('/^[A-Za-z0-9]{32}$/', $token)) {
+            return null;
+        }
+
+        return storage_path('app/' . self::CARPETA_ALMACEN . '/' . $token . '.dat');
+    }
+
+    private function leerAlmacen()
+    {
+        $ruta = $this->rutaAlmacen();
+        if (!$ruta || !is_file($ruta)) {
+            return [];
+        }
+
+        try {
+            $datos = unserialize(gzdecode(file_get_contents($ruta)));
+        } catch (\Throwable $th) {
+            Log::warning('Mensajes masivos: no se pudo leer el listado en disco', ['error' => $th->getMessage()]);
+            return [];
+        }
+
+        return is_array($datos) ? $datos : [];
+    }
+
+    private function escribirAlmacen()
+    {
+        if (!$this->almacen) {
+            $this->almacen = Str::random(32);
+        }
+
+        $ruta = $this->rutaAlmacen();
+        if (!$ruta) {
+            return;
+        }
+
+        if (!is_dir(dirname($ruta))) {
+            @mkdir(dirname($ruta), 0775, true);
+        }
+
+        try {
+            // gzip: 25.000 registros pasan de unos 7 MB a menos de 1 MB en disco.
+            file_put_contents($ruta, gzencode(serialize($this->registros), 1));
+        } catch (\Throwable $th) {
+            Log::error('Mensajes masivos: no se pudo guardar el listado en disco', ['error' => $th->getMessage()]);
+        }
+    }
+
+    private function borrarAlmacen()
+    {
+        $ruta = $this->rutaAlmacen();
+        if ($ruta && is_file($ruta)) {
+            @unlink($ruta);
+        }
+        $this->almacen = null;
+    }
+
+    /** Listados que quedaron de sesiones anteriores (el usuario cerró la pestaña sin enviar). */
+    private function limpiarAlmacenesViejos()
+    {
+        $carpeta = storage_path('app/' . self::CARPETA_ALMACEN);
+        if (!is_dir($carpeta)) {
+            return;
+        }
+
+        $limite = time() - self::HORAS_ALMACEN * 3600;
+        foreach ((array) glob($carpeta . '/*.dat') as $archivo) {
+            if (@filemtime($archivo) < $limite) {
+                @unlink($archivo);
+            }
+        }
     }
 
     public function procesarArchivo()
     {
         $this->validate();
         $this->reiniciarResultados();
+        $this->limpiarAlmacenesViejos();
 
         if (!in_array(strtolower($this->archivo->getClientOriginalExtension()), ['xlsx', 'xls', 'csv'])) {
             $this->addError('archivo', 'El archivo debe ser de tipo .xlsx, .xls o .csv.');
             return;
         }
+
+        // Leer 25.000 filas con PhpSpreadsheet ronda los 250 MB y unos segundos;
+        // un archivo con muchas columnas o formatos pide más que el php.ini.
+        @ini_set('memory_limit', '1024M');
+        @set_time_limit(300);
 
         try {
             $filas = $this->leerExcel($this->archivo->getRealPath());
@@ -156,6 +286,9 @@ class Consulta extends Component
             $this->registros[] = $fila;
         }
 
+        $this->almacen = Str::random(32);
+        $this->almacenSucio = true;
+
         $this->nombreArchivo = $this->archivo->getClientOriginalName();
         $this->seleccionados = array_map('strval', array_keys(array_filter($this->registros, function ($r) {
             return $this->puedeEnviarse($r);
@@ -164,8 +297,8 @@ class Consulta extends Component
 
     public function limpiar()
     {
-        $this->reset(['archivo', 'nombreArchivo', 'nombreHoja', 'filtro', 'busqueda']);
         $this->reiniciarResultados();
+        $this->reset(['archivo', 'nombreArchivo', 'nombreHoja', 'filtro', 'busqueda']);
         $this->resetErrorBag();
     }
 
@@ -232,29 +365,107 @@ class Consulta extends Component
         $this->modalConfirmar = true;
     }
 
+    /**
+     * Arranca el envío. El trabajo real lo hace enviarLote(): con 25.000
+     * registros una sola petición no alcanzaría a terminar antes de
+     * max_execution_time, así que la vista sigue llamando a enviarLote()
+     * con wire:poll hasta que no quede nada pendiente.
+     */
     public function enviarMensajes()
     {
         $this->validateOnly('sede');
         $this->modalConfirmar = false;
 
-        $indices = $this->indicesParaEnviar();
+        $pendientes = $this->indicesParaEnviar();
+        if (empty($pendientes)) {
+            $this->addError('envio', 'No hay registros seleccionados con correo electrónico para enviar.');
+            return;
+        }
 
-        // $registros viaja al navegador y puede volver alterado: el destinatario
-        // y el nombre se toman otra vez de la tabla users.
+        $this->resultadoEnvio   = null;
+        $this->envioEnCurso     = true;
+        $this->envioLote        = (string) Str::uuid();
+        $this->envioTotal       = count($pendientes);
+        $this->envioEnviados    = 0;
+        $this->envioFallidos    = 0;
+        $this->envioDuplicados  = 0;
+        $this->envioConfirmados = [];
+        $this->envioNoEnviados  = [];
+
+        $this->enviarLote();
+    }
+
+    public function enviarLote()
+    {
+        if (!$this->envioEnCurso) {
+            return;
+        }
+
+        $this->validateOnly('sede');
+
+        // Un lote son POR_LOTE registros: unos pocos segundos de consultas y
+        // encolado, muy por debajo del tiempo máximo de ejecución.
+        @set_time_limit(300);
+
+        $indices = array_slice($this->indicesParaEnviar(), 0, self::POR_LOTE);
+
+        if (empty($indices)) {
+            $this->terminarEnvio();
+            return;
+        }
+
+        $this->procesarLote($indices);
+
+        // Si ya no queda nada pendiente, se cierra el envío en esta misma petición.
+        if (empty($this->indicesParaEnviar())) {
+            $this->terminarEnvio();
+        }
+    }
+
+    private function terminarEnvio()
+    {
+        $this->envioEnCurso = false;
+        $this->seleccionados = [];
+
+        // Una sola vez al final: si se vaciara la cola después de cada lote,
+        // cada petición dejaría un queue:work de hasta 50 s ocupando un proceso
+        // de Apache mientras el siguiente lote ya está entrando.
+        if ($this->envioEnviados > 0) {
+            $this->despacharCorreosEnSegundoPlano();
+        }
+
+        Log::info('Mensajes masivos de citación', [
+            'usuario'  => Auth::id(),
+            'archivo'  => $this->nombreArchivo,
+            'sede'     => $this->sede,
+            'enviados' => $this->envioEnviados,
+            'fallidos' => $this->envioFallidos,
+        ]);
+
+        $this->resultadoEnvio = [
+            'enviados'    => $this->envioEnviados,
+            'fallidos'    => $this->envioFallidos,
+            'duplicados'  => $this->envioDuplicados,
+            'confirmados' => $this->envioConfirmados,
+            'noEnviados'  => $this->envioNoEnviados,
+            // Las listas en pantalla se recortan; el informe completo es el Excel.
+            'ocultosConfirmados' => max(0, $this->envioEnviados - count($this->envioConfirmados)),
+            'ocultosNoEnviados'  => max(0, $this->envioFallidos - count($this->envioNoEnviados)),
+        ];
+    }
+
+    private function procesarLote(array $indices)
+    {
+
+        // La selección viaja al navegador y puede volver alterada: el
+        // destinatario y el nombre se toman otra vez de la tabla users.
         $usuarios = User::whereIn('id', array_filter(array_map(function ($i) {
                 return $this->registros[$i]['user_id'];
             }, $indices)))
             ->get(['id', 'name', 'apellido1', 'apellido2', 'ndocumento', 'email'])
             ->keyBy('id');
 
-        $enviados = 0;
-        $fallidos = 0;
-        $duplicados = 0;
-        $lote = (string) Str::uuid();
-
-        // Pacientes a los que se les confirmó (o no) la cita, para mostrarlos en pantalla.
-        $confirmados = [];
-        $noEnviados = [];
+        $lote = $this->envioLote;
 
         foreach ($indices as $indice) {
             $registro = $this->registros[$indice];
@@ -265,8 +476,12 @@ class Consulta extends Component
             }
 
             if (!$usuario || empty($usuario->email) || $this->normalizarDocumento($usuario->ndocumento) !== $registro['documento']) {
-                $fallidos++;
-                $noEnviados[] = $this->resumenPaciente($registro);
+                // 'omitido', no 'enviado': en la tabla no debe aparecer como enviado,
+                // pero el siguiente lote no lo puede volver a tomar.
+                $this->registros[$indice]['omitido'] = true;
+                $this->almacenSucio = true;
+                $this->envioFallidos++;
+                $this->agregarEnPantalla('envioNoEnviados', $registro);
                 continue;
             }
 
@@ -295,7 +510,8 @@ class Consulta extends Component
                 // La misma fila repetida en el archivo: ya se le envió en este envío.
                 if (!$esNueva && $citacion->lote === $lote) {
                     $this->registros[$indice]['enviado'] = true;
-                    $duplicados++;
+                    $this->almacenSucio = true;
+                    $this->envioDuplicados++;
                     continue;
                 }
 
@@ -331,8 +547,9 @@ class Consulta extends Component
                     $lote
                 ));
                 $this->registros[$indice]['enviado'] = true;
-                $enviados++;
-                $confirmados[] = $this->resumenPaciente($registro);
+                $this->almacenSucio = true;
+                $this->envioEnviados++;
+                $this->agregarEnPantalla('envioConfirmados', $registro);
             } catch (\Throwable $th) {
                 Log::error('Mensajes masivos: no se pudo encolar el correo', [
                     'user_id' => $usuario->id,
@@ -348,45 +565,42 @@ class Consulta extends Component
                 } catch (\Throwable $e) {
                     Log::error('Mensajes masivos: no se pudo revertir la citación', ['error' => $e->getMessage()]);
                 }
-                $fallidos++;
-                $noEnviados[] = $this->resumenPaciente($registro);
+                $this->registros[$indice]['omitido'] = true;
+                $this->almacenSucio = true;
+                $this->envioFallidos++;
+                $this->agregarEnPantalla('envioNoEnviados', $registro);
             }
         }
 
-        Log::info('Mensajes masivos de citación', [
-            'usuario'  => Auth::id(),
-            'archivo'  => $this->nombreArchivo,
-            'sede'     => $this->sede,
-            'enviados' => $enviados,
-            'fallidos' => $fallidos,
-        ]);
+    }
 
-        if ($enviados > 0) {
-            $this->despacharCorreosEnSegundoPlano();
+    /** Las listas en pantalla se recortan: 25.000 filas en el DOM no son usables. */
+    private function agregarEnPantalla($propiedad, array $registro)
+    {
+        if (count($this->$propiedad) < self::MAX_EN_PANTALLA) {
+            $this->$propiedad[] = $this->resumenPaciente($registro);
         }
-
-        $this->seleccionados = [];
-        $this->resultadoEnvio = [
-            'enviados'    => $enviados,
-            'fallidos'    => $fallidos,
-            'duplicados'  => $duplicados,
-            'confirmados' => $confirmados,
-            'noEnviados'  => $noEnviados,
-        ];
     }
 
     public function render()
     {
+        // Un solo recorrido: con 25.000 registros cada array_filter extra se nota.
         $total = count($this->registros);
-        $encontrados = count(array_filter($this->registros, function ($r) {
-            return $r['encontrado'];
-        }));
-        $sinCorreo = count(array_filter($this->registros, function ($r) {
-            return $r['encontrado'] && empty($r['email']);
-        }));
-        $incompletos = count(array_filter($this->registros, function ($r) {
-            return $r['encontrado'] && !$r['completo'];
-        }));
+        $encontrados = $sinCorreo = $incompletos = 0;
+        foreach ($this->registros as $r) {
+            if (!$r['encontrado']) {
+                continue;
+            }
+            $encontrados++;
+            if (empty($r['email'])) {
+                $sinCorreo++;
+            }
+            if (!$r['completo']) {
+                $incompletos++;
+            }
+        }
+
+        $indicesParaEnviar = $this->indicesParaEnviar();
 
         // Solo se pinta una página de la tabla; los índices originales se conservan.
         $filtrados = $this->registrosFiltrados();
@@ -403,14 +617,18 @@ class Consulta extends Component
             'noEncontrados' => $total - $encontrados,
             'sinCorreo'     => $sinCorreo,
             'incompletos'   => $incompletos,
-            'porEnviar'     => count($this->indicesParaEnviar()),
+            'porEnviar'     => count($indicesParaEnviar),
             'urlConfirmacion'     => CitacionMasiva::baseUrlConfirmacion(),
             'enlaceSoloRedInterna' => CitacionMasiva::enlaceSoloRedInterna(),
+            // Solo una muestra: el modal con 25.000 filas bloquearía el navegador.
             'pacientesPorEnviar' => $this->modalConfirmar
                 ? array_map(function ($i) {
                     return $this->resumenPaciente($this->registros[$i]);
-                }, $this->indicesParaEnviar())
+                }, array_slice($indicesParaEnviar, 0, self::MAX_EN_PANTALLA))
                 : [],
+            'pacientesPorEnviarOcultos' => $this->modalConfirmar
+                ? max(0, count($indicesParaEnviar) - self::MAX_EN_PANTALLA)
+                : 0,
         ]);
     }
 
@@ -462,7 +680,9 @@ class Consulta extends Component
 
     private function reiniciarResultados()
     {
+        $this->borrarAlmacen();
         $this->registros = [];
+        $this->almacenSucio = false;
         $this->columnasFaltantes = [];
         $this->faltaNombrePaciente = false;
         $this->nombreHoja = null;
@@ -471,11 +691,20 @@ class Consulta extends Component
         $this->vistaPrevia = null;
         $this->modalConfirmar = false;
         $this->resultadoEnvio = null;
+        $this->envioEnCurso = false;
+        $this->envioLote = null;
+        $this->envioTotal = 0;
+        $this->envioEnviados = 0;
+        $this->envioFallidos = 0;
+        $this->envioDuplicados = 0;
+        $this->envioConfirmados = [];
+        $this->envioNoEnviados = [];
     }
 
     private function puedeEnviarse(array $registro)
     {
-        return $registro['encontrado'] && $registro['completo'] && !empty($registro['email']) && !$registro['enviado'];
+        return $registro['encontrado'] && $registro['completo'] && !empty($registro['email'])
+            && !$registro['enviado'] && empty($registro['omitido']);
     }
 
     /** La selección llega del navegador: se descartan valores raros e índices repetidos. */

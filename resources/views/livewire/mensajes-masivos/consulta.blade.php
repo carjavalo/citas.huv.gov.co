@@ -40,7 +40,7 @@
 
             <form wire:submit.prevent="procesarArchivo" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                 <div class="md:col-span-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Archivo de Excel (.xlsx, .xls, .csv) - máx. 2 MB</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Archivo de Excel (.xlsx, .xls, .csv) - máx. 25 MB</label>
                     <input type="file" wire:model="archivo" accept=".xlsx,.xls,.csv"
                            class="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-[#2c4370] file:text-white hover:file:bg-[#1e3a8a]">
                     <div wire:loading wire:target="archivo" class="text-xs text-blue-600 mt-1">Cargando archivo...</div>
@@ -64,7 +64,7 @@
                         <svg wire:loading wire:target="procesarArchivo" class="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
                         Procesar
                     </button>
-                    @if (count($registros))
+                    @if ($total)
                         <button type="button" wire:click="limpiar" title="Limpiar"
                                 class="inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
                             <span class="material-icons text-base">restart_alt</span>
@@ -109,10 +109,33 @@
             </div>
         @endif
 
-        @if ($faltaNombrePaciente && count($registros))
+        @if ($faltaNombrePaciente && $total)
             <div class="mb-6 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-4 flex items-start">
                 <span class="material-icons mr-2">info</span>
                 <p class="text-sm">El archivo no tiene la columna <strong>NOMBRE DEL PACIENTE</strong>: se usará el nombre registrado en el sistema.</p>
+            </div>
+        @endif
+
+        {{-- Envío por lotes: cada poll procesa POR_LOTE registros hasta terminar. --}}
+        @if ($envioEnCurso)
+            @php
+                $procesados = $envioEnviados + $envioFallidos + $envioDuplicados;
+                $porcentaje = $envioTotal ? min(100, round($procesados * 100 / $envioTotal)) : 0;
+            @endphp
+            {{-- keep-alive: sin él Livewire deja de sondear si el usuario cambia de pestaña
+                 y un envío de 25.000 registros quedaría a medias. --}}
+            <div wire:poll.keep-alive.1000ms="enviarLote" class="mb-6 rounded-xl p-4 border bg-blue-50 border-blue-200 text-blue-900">
+                <div class="flex items-center mb-2">
+                    <svg class="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                    <p class="font-semibold">Enviando citaciones… {{ number_format($procesados) }} de {{ number_format($envioTotal) }}</p>
+                </div>
+                <div class="w-full bg-blue-100 rounded-full h-2.5 overflow-hidden">
+                    <div class="bg-blue-600 h-2.5 transition-all duration-300" style="width: {{ $porcentaje }}%"></div>
+                </div>
+                <p class="text-xs mt-2">
+                    {{ number_format($envioEnviados) }} en cola · {{ number_format($envioDuplicados) }} repetidas · {{ number_format($envioFallidos) }} con error.
+                    No cierre esta página hasta que termine.
+                </p>
             </div>
         @endif
 
@@ -132,6 +155,9 @@
                         <p>{{ $resultadoEnvio['duplicados'] }} fila(s) repetida(s) en el archivo (mismo paciente y misma cita) no se enviaron de nuevo.</p>
                     @endif
 
+                    @if (($resultadoEnvio['ocultosConfirmados'] ?? 0) || ($resultadoEnvio['ocultosNoEnviados'] ?? 0))
+                        <p class="text-xs mt-1">Las listas muestran los primeros {{ \App\Http\Livewire\MensajesMasivos\Consulta::MAX_EN_PANTALLA }} pacientes. El detalle completo está en "Ver confirmaciones (Excel)".</p>
+                    @endif
                     @if (count($resultadoEnvio['confirmados'] ?? []))
                         <p class="mt-3 font-semibold text-gray-700">Pacientes a los que se les confirmó la cita:</p>
                         @include('livewire.mensajes-masivos.lista-pacientes', ['pacientes' => $resultadoEnvio['confirmados']])
@@ -148,7 +174,7 @@
             </div>
         @endif
 
-        @if (count($registros))
+        @if ($total)
         {{-- La selección se sincroniza con el servidor solo al enviar, para no recargar la tabla en cada clic. --}}
         <div x-data="{ seleccion: @entangle('seleccionados').defer }">
             {{-- Resumen --}}
@@ -240,7 +266,7 @@
                             @forelse ($filas as $indice => $registro)
                                 <tr wire:key="registro-{{ $indice }}" class="{{ $registro['encontrado'] ? 'hover:bg-blue-50/40' : 'bg-red-50/40' }}">
                                     <td class="px-4 py-3">
-                                        @if ($registro['encontrado'] && $registro['completo'] && $registro['email'] && !$registro['enviado'])
+                                        @if ($registro['encontrado'] && $registro['completo'] && $registro['email'] && !$registro['enviado'] && empty($registro['omitido']))
                                             {{-- Sin x-model: en Alpine 3.8 duplica el valor en filas que aparecen al paginar o filtrar. --}}
                                             <input type="checkbox" value="{{ $indice }}"
                                                    :checked="seleccion.includes('{{ $indice }}')"
@@ -272,6 +298,8 @@
                                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">No registrado</span>
                                         @elseif (!$registro['completo'])
                                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700" title="Faltan datos de la cita en el archivo">Datos incompletos</span>
+                                        @elseif (!empty($registro['omitido']))
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700" title="No se pudo poner en cola: revise el log del sistema">No enviado</span>
                                         @elseif (!$registro['email'])
                                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Sin correo</span>
                                         @else
@@ -366,8 +394,20 @@
                         </p>
                     @endif
 
-                    <p class="text-sm font-semibold text-gray-700 mt-4">Pacientes a los que se les confirmará la cita:</p>
+                    <p class="text-sm font-semibold text-gray-700 mt-4">
+                        Pacientes a los que se les confirmará la cita:
+                        @if ($pacientesPorEnviarOcultos)
+                            <span class="font-normal text-xs text-gray-500">(se muestran los primeros {{ count($pacientesPorEnviar) }}; faltan {{ number_format($pacientesPorEnviarOcultos) }} más)</span>
+                        @endif
+                    </p>
                     @include('livewire.mensajes-masivos.lista-pacientes', ['pacientes' => $pacientesPorEnviar])
+
+                    @if ($porEnviar > \App\Http\Livewire\MensajesMasivos\Consulta::POR_LOTE)
+                        <p class="text-xs text-slate-600 mt-3 bg-slate-50 border border-slate-200 rounded p-2">
+                            El envío se hace por lotes de {{ number_format(\App\Http\Livewire\MensajesMasivos\Consulta::POR_LOTE) }} registros.
+                            Mantenga esta página abierta hasta que la barra de progreso llegue al final.
+                        </p>
+                    @endif
                 </div>
                 <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
                     <button type="button" wire:click="$set('modalConfirmar', false)" class="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-sm">Cancelar</button>
