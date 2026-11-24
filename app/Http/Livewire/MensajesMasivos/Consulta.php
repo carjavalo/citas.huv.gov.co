@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire\MensajesMasivos;
 
+use App\Exports\NoRegistradosExport;
 use App\Mail\MensajeMasivoCitacion;
 use App\Models\CitacionMasiva;
 use App\Models\User;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
@@ -317,6 +319,54 @@ class Consulta extends Component
         $this->pagina = max(1, (int) $pagina);
     }
 
+    /** Filtro de la tabla; se usa desde los recuadros del resumen. */
+    public function filtrar($filtro)
+    {
+        $this->filtro = in_array($filtro, ['todos', 'encontrados', 'no_encontrados'], true) ? $filtro : 'todos';
+        $this->pagina = 1;
+    }
+
+    /**
+     * Listado en Excel de los pacientes del archivo que no están registrados en
+     * el sistema. En pantalla solo se ve una página a la vez y el listado se
+     * pierde al importar otro archivo, así que el Excel es la copia que queda.
+     */
+    public function descargarNoRegistrados()
+    {
+        return $this->descargarListado(function ($r) {
+            return !$r['encontrado'];
+        }, 'no_registrados');
+    }
+
+    /** Listado en Excel de los pacientes registrados que aun así no reciben la citación. */
+    public function descargarSinDatos()
+    {
+        return $this->descargarListado(function ($r) {
+            return $r['encontrado'] && (empty($r['email']) || !$r['completo']);
+        }, 'sin_correo_o_datos_incompletos');
+    }
+
+    private function descargarListado(callable $filtro, $nombre)
+    {
+        $registros = array_values(array_filter($this->registros, $filtro));
+
+        if (empty($registros)) {
+            $this->addError('descarga', 'No hay pacientes para ese listado.');
+            return;
+        }
+
+        $this->resetErrorBag('descarga');
+
+        // Escribir varios miles de filas con PhpSpreadsheet toma unos segundos.
+        @ini_set('memory_limit', '1024M');
+        @set_time_limit(300);
+
+        return Excel::download(
+            new NoRegistradosExport($registros),
+            $nombre . '_' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
+
     public function seleccionarTodos()
     {
         $this->seleccionados = array_map('strval', array_keys(array_filter($this->registrosFiltrados(), function ($r) {
@@ -588,7 +638,7 @@ class Consulta extends Component
     {
         // Un solo recorrido: con 25.000 registros cada array_filter extra se nota.
         $total = count($this->registros);
-        $encontrados = $sinCorreo = $incompletos = 0;
+        $encontrados = $sinCorreo = $incompletos = $sinDatos = 0;
         foreach ($this->registros as $r) {
             if (!$r['encontrado']) {
                 continue;
@@ -599,6 +649,11 @@ class Consulta extends Component
             }
             if (!$r['completo']) {
                 $incompletos++;
+            }
+            // Sin correo y con datos incompletos a la vez se cuenta una sola
+            // vez: es el total del listado que descarga descargarSinDatos().
+            if (empty($r['email']) || !$r['completo']) {
+                $sinDatos++;
             }
         }
 
@@ -619,6 +674,7 @@ class Consulta extends Component
             'noEncontrados' => $total - $encontrados,
             'sinCorreo'     => $sinCorreo,
             'incompletos'   => $incompletos,
+            'sinDatos'      => $sinDatos,
             'porEnviar'     => count($indicesParaEnviar),
             'urlConfirmacion'     => CitacionMasiva::baseUrlConfirmacion(),
             'enlaceSoloRedInterna' => CitacionMasiva::enlaceSoloRedInterna(),

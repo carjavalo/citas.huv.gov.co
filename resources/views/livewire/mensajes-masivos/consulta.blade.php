@@ -178,19 +178,26 @@
         {{-- La selección se sincroniza con el servidor solo al enviar, para no recargar la tabla en cada clic. --}}
         <div x-data="{ seleccion: @entangle('seleccionados').defer }">
             {{-- Resumen --}}
+            {{-- Los tres primeros recuadros filtran la tabla al hacer clic. --}}
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-                <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                <button type="button" wire:click="filtrar('todos')" title="Ver todos los registros del archivo"
+                        class="bg-white rounded-xl border p-4 shadow-sm text-left hover:shadow-md {{ $filtro === 'todos' ? 'border-[#2c4370] ring-1 ring-[#2c4370]' : 'border-gray-200' }}">
                     <p class="text-xs text-slate-500">Registros en archivo</p>
                     <p class="text-2xl font-bold text-[#2c4370]">{{ $total }}</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                </button>
+                <button type="button" wire:click="filtrar('encontrados')" title="Ver solo los pacientes registrados"
+                        class="bg-white rounded-xl border p-4 shadow-sm text-left hover:shadow-md {{ $filtro === 'encontrados' ? 'border-green-600 ring-1 ring-green-600' : 'border-gray-200' }}">
                     <p class="text-xs text-slate-500">Encontrados en el sistema</p>
                     <p class="text-2xl font-bold text-green-600">{{ $encontrados }}</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                </button>
+                <button type="button" wire:click="filtrar('no_encontrados')" title="Ver el listado de los no registrados"
+                        class="bg-white rounded-xl border p-4 shadow-sm text-left hover:shadow-md {{ $filtro === 'no_encontrados' ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200' }}">
                     <p class="text-xs text-slate-500">No registrados</p>
                     <p class="text-2xl font-bold text-red-500">{{ $noEncontrados }}</p>
-                </div>
+                    @if ($noEncontrados)
+                        <p class="text-[11px] text-red-600 font-medium">Ver listado</p>
+                    @endif
+                </button>
                 <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                     <p class="text-xs text-slate-500">Sin correo electrónico</p>
                     <p class="text-2xl font-bold text-amber-500">{{ $sinCorreo }}</p>
@@ -243,6 +250,31 @@
                             </button>
                         </div>
                     </div>
+                    {{-- El listado se pierde al importar otro archivo: el Excel es la copia que queda. --}}
+                    @if ($noEncontrados || $sinDatos)
+                        <div class="mt-3 flex flex-wrap items-center gap-2">
+                            <span class="text-xs text-slate-500">Descargar en Excel:</span>
+                            @if ($noEncontrados)
+                                <button type="button" wire:click="descargarNoRegistrados"
+                                        wire:loading.attr="disabled" wire:target="descargarNoRegistrados"
+                                        class="inline-flex items-center px-3 py-1.5 border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-medium disabled:opacity-50">
+                                    <span wire:loading.remove wire:target="descargarNoRegistrados" class="material-icons text-sm mr-1">download</span>
+                                    <span wire:loading wire:target="descargarNoRegistrados" class="material-icons text-sm mr-1 animate-spin">autorenew</span>
+                                    Pacientes no registrados ({{ $noEncontrados }})
+                                </button>
+                            @endif
+                            @if ($sinDatos)
+                                <button type="button" wire:click="descargarSinDatos"
+                                        wire:loading.attr="disabled" wire:target="descargarSinDatos"
+                                        class="inline-flex items-center px-3 py-1.5 border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg text-xs font-medium disabled:opacity-50">
+                                    <span wire:loading.remove wire:target="descargarSinDatos" class="material-icons text-sm mr-1">download</span>
+                                    <span wire:loading wire:target="descargarSinDatos" class="material-icons text-sm mr-1 animate-spin">autorenew</span>
+                                    Sin correo o datos incompletos ({{ $sinDatos }})
+                                </button>
+                            @endif
+                        </div>
+                    @endif
+                    @error('descarga') <p class="text-xs text-red-600 mt-2">{{ $message }}</p> @enderror
                     @error('envio') <p class="text-xs text-red-600 mt-2">{{ $message }}</p> @enderror
                 </div>
 
