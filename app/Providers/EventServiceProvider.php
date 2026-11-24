@@ -24,6 +24,10 @@ class EventServiceProvider extends ServiceProvider
         \Illuminate\Auth\Events\Logout::class => [
             \App\Listeners\LogUserLogout::class,
         ],
+        // Marca la citación masiva cuando el correo sale de verdad de la cola.
+        \Illuminate\Mail\Events\MessageSent::class => [
+            \App\Listeners\MarcarCitacionEntregada::class,
+        ],
     ];
 
     /**

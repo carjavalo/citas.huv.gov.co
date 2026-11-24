@@ -75,6 +75,17 @@ class Informe extends Component
             ->groupBy('estado')
             ->pluck('total', 'estado');
 
+        // Entrega real del correo, que es distinta de la respuesta del paciente:
+        // 'enviado_at' solo dice que la citación se encoló.
+        $entrega = CitacionMasiva::query()
+            ->filtrar(array_merge($this->filtros(), ['estado' => '', 'incluirFallidos' => true]))
+            ->selectRaw('sum(entregado_at is not null) as entregadas')
+            ->selectRaw('sum(entregado_at is null and estado <> ? and enviado_at >= ?) as en_cola',
+                [CitacionMasiva::FALLIDO, CitacionMasiva::SEGUIMIENTO_DESDE])
+            ->selectRaw('sum(entregado_at is null and estado <> ? and enviado_at < ?) as sin_dato',
+                [CitacionMasiva::FALLIDO, CitacionMasiva::SEGUIMIENTO_DESDE])
+            ->first();
+
         $lotes = CitacionMasiva::query()
             ->selectRaw("lote, archivo, min(enviado_at) as enviado, sum(case when estado <> 'fallido' then 1 else 0 end) as total")
             ->groupBy('lote', 'archivo')
@@ -94,6 +105,9 @@ class Informe extends Component
             'totalNoAsistira' => $totales[CitacionMasiva::NO_ASISTIRA] ?? 0,
             'totalPendiente' => $totales[CitacionMasiva::PENDIENTE] ?? 0,
             'totalFallido'   => $totales[CitacionMasiva::FALLIDO] ?? 0,
+            'totalEntregadas' => (int) ($entrega->entregadas ?? 0),
+            'totalEnCola'     => (int) ($entrega->en_cola ?? 0),
+            'totalSinDato'    => (int) ($entrega->sin_dato ?? 0),
             'lotes'          => $lotes,
             'sedes'          => Consulta::SEDES,
         ]);

@@ -520,6 +520,8 @@ class Consulta extends Component
 
                 $citacion->fill([
                     'enviado_at'   => now(),
+                    // Vuelve a la cola: hasta que salga no está entregado.
+                    'entregado_at' => null,
                     'lote'         => $lote,
                     'archivo'      => $this->recortar($this->nombreArchivo, 191),
                     'enviado_por'  => Auth::id(),

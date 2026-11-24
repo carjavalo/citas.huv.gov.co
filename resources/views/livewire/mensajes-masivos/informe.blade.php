@@ -66,6 +66,37 @@
             </button>
         @endif
 
+        {{-- Entrega del correo: "enviada" solo dice que la citación se encoló. --}}
+        <div class="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3">Salida de los correos</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                <div class="flex items-center">
+                    <span class="material-icons text-base mr-2 text-green-600">outgoing_mail</span>
+                    <span><strong class="text-green-700">{{ number_format($totalEntregadas) }}</strong> entregados al servidor de correo</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="material-icons text-base mr-2 {{ $totalEnCola ? 'text-amber-600' : 'text-gray-400' }}">schedule_send</span>
+                    <span><strong class="{{ $totalEnCola ? 'text-amber-700' : 'text-gray-500' }}">{{ number_format($totalEnCola) }}</strong> todavía en la cola, sin salir</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="material-icons text-base mr-2 text-gray-400">help_outline</span>
+                    <span><strong class="text-gray-500">{{ number_format($totalSinDato) }}</strong> sin dato (envíos anteriores)</span>
+                </div>
+            </div>
+            @if ($totalEnCola)
+                <p class="text-xs text-amber-800 mt-3 bg-amber-50 border border-amber-200 rounded p-2">
+                    <strong>Atención:</strong> esos {{ number_format($totalEnCola) }} correo(s) aún no han salido. Salen solos con el proceso
+                    que vacía la cola cada minuto; si no avanzan, revise que el cron de <code>schedule:run</code> esté activo en el servidor.
+                </p>
+            @endif
+            @if ($totalSinDato)
+                <p class="text-xs text-slate-500 mt-2">
+                    El registro de la entrega empezó el {{ \Carbon\Carbon::parse(\App\Models\CitacionMasiva::SEGUIMIENTO_DESDE)->format('d/m/Y') }}.
+                    De los envíos anteriores no se puede saber si el correo salió.
+                </p>
+            @endif
+        </div>
+
         {{-- Filtros --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
@@ -154,6 +185,16 @@
                                     @endif
                                     @if ($c->respondido_at)
                                         <span class="block text-xs text-gray-400 mt-0.5">{{ $c->respondido_at->format('d/m/Y h:i A') }}</span>
+                                    @endif
+                                    {{-- Entrega del correo, aparte de la respuesta del paciente. --}}
+                                    @if ($c->entregado_at)
+                                        <span class="block text-xs text-green-700 mt-0.5" title="El servidor de correo aceptó el mensaje">
+                                            Correo enviado {{ $c->entregado_at->format('d/m/Y h:i A') }}
+                                        </span>
+                                    @elseif ($c->estado !== 'fallido' && $c->enviado_at && $c->enviado_at->format('Y-m-d') >= \App\Models\CitacionMasiva::SEGUIMIENTO_DESDE)
+                                        <span class="block text-xs text-amber-700 mt-0.5" title="Encolado pero todavía sin salir">
+                                            Correo aún en la cola
+                                        </span>
                                     @endif
                                 </td>
                             </tr>

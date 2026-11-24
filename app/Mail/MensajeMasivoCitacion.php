@@ -42,8 +42,17 @@ class MensajeMasivoCitacion extends Mailable implements ShouldQueue
         $this->lote            = $lote;
     }
 
+    /** Cabecera con la que MarcarCitacionEntregada reconoce el correo ya enviado. */
+    const CABECERA_CITACION = 'X-Citacion-Masiva-Id';
+
     public function build()
     {
+        if ($this->citacionId) {
+            $this->withSwiftMessage(function ($message) {
+                $message->getHeaders()->addTextHeader(self::CABECERA_CITACION, (string) $this->citacionId);
+            });
+        }
+
         return $this->subject('Programación de su cita médica - Hospital Universitario del Valle')
             ->markdown('emails.mensaje-masivo-citacion');
     }

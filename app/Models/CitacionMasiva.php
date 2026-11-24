@@ -25,6 +25,13 @@ class CitacionMasiva extends Model
         self::FALLIDO     => 'Correo no entregado',
     ];
 
+    /**
+     * Desde cuándo se registra la entrega real del correo ('entregado_at').
+     * Los envíos anteriores no tienen el dato y no deben contarse como
+     * "sin salir de la cola": en el informe aparecen como "sin dato".
+     */
+    const SEGUIMIENTO_DESDE = '2026-11-24';
+
     protected $fillable = [
         'lote',
         'archivo',
@@ -40,6 +47,7 @@ class CitacionMasiva extends Model
         'especialista',
         'sede',
         'enviado_at',
+        'entregado_at',
         'token',
         'estado',
         'respondido_at',
@@ -47,6 +55,7 @@ class CitacionMasiva extends Model
 
     protected $casts = [
         'enviado_at'    => 'datetime',
+        'entregado_at'  => 'datetime',
         'respondido_at' => 'datetime',
     ];
 

@@ -46,9 +46,27 @@ class CitacionesMasivasExport extends StringValueBinder implements FromQuery, Wi
             'HORA DE CITA',
             'NOMBRE ESPECIALISTA',
             'SEDE',
+            'CORREO ENVIADO',
+            'FECHA ENVÍO DEL CORREO',
             'RESPUESTA',
             'FECHA RESPUESTA',
         ];
+    }
+
+    /** 'FECHA ENVÍO' es cuándo se encoló; esto es cuándo salió el correo de verdad. */
+    private function estadoEntrega($citacion)
+    {
+        if ($citacion->entregado_at) {
+            return 'Sí';
+        }
+        if ($citacion->estado === CitacionMasiva::FALLIDO) {
+            return 'No (no entregado)';
+        }
+        if ($citacion->enviado_at && $citacion->enviado_at->format('Y-m-d') >= CitacionMasiva::SEGUIMIENTO_DESDE) {
+            return 'Aún en la cola';
+        }
+
+        return 'Sin dato';
     }
 
     public function map($citacion): array
@@ -65,6 +83,8 @@ class CitacionesMasivasExport extends StringValueBinder implements FromQuery, Wi
             $citacion->hora,
             $citacion->especialista,
             MensajesMasivos::SEDES[$citacion->sede]['nombre'] ?? $citacion->sede,
+            $this->estadoEntrega($citacion),
+            $citacion->entregado_at ? $citacion->entregado_at->format('d/m/Y h:i A') : '',
             $citacion->estado_texto,
             $citacion->respondido_at ? $citacion->respondido_at->format('d/m/Y h:i A') : '',
         ];
